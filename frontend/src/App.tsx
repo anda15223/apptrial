@@ -24,9 +24,7 @@ function App() {
       try {
         setError(null);
         const res = await fetch(apiUrl);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = (await res.json()) as DashboardTodayResponse;
         setData(json);
       } catch (e: any) {
