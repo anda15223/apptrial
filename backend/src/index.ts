@@ -1,7 +1,9 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+
 import { dashboardRouter } from "./routes/dashboard";
+import { inputsRouter } from "./routes/inputs";
 
 dotenv.config();
 
@@ -14,10 +16,15 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// Existing dashboard route
 app.use("/api/dashboard", dashboardRouter);
+
+// NEW manual inputs route (database save)
+app.use("/api/inputs", inputsRouter);
 
 const PORT = Number(process.env.PORT || 3001);
 
 app.listen(PORT, () => {
   console.log(`[backend] listening on http://localhost:${PORT}`);
 });
+
