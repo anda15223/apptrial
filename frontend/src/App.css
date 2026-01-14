@@ -257,6 +257,12 @@ body {
   color: var(--red);
 }
 
+/* ✅ Added Yellow pill */
+.pillYellow {
+  background: rgba(234, 179, 8, 0.18);
+  color: #eab308;
+}
+
 .pillNeutral {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.55);
