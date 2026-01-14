@@ -1,12 +1,12 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
 export type DailyInput = {
   date: string; // YYYY-MM-DD
   totalRevenue: number;
   woltRevenue: number;
-  laborCost: number; // from Planday (manual now)
-  bcGroceryCost: number; // from BC Catering (manual now)
+  laborCost: number; // manual now, Planday later
+  bcGroceryCost: number; // manual now, BC later
   updatedAt: string;
 };
 
@@ -19,6 +19,7 @@ const DB_PATH = path.join(process.cwd(), "data", "db.json");
 function ensureDbFile() {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
   if (!fs.existsSync(DB_PATH)) {
     const init: DbShape = { dailyInputs: [] };
     fs.writeFileSync(DB_PATH, JSON.stringify(init, null, 2), "utf-8");
@@ -52,4 +53,3 @@ export function upsertDailyInput(input: Omit<DailyInput, "updatedAt">): DailyInp
 export function listDailyInputs(): DailyInput[] {
   return readDb().dailyInputs;
 }
-

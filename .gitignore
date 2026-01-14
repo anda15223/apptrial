@@ -2,3 +2,6 @@
 .env
 dist
 .DS_Store
+# Backend local DB + test files
+backend/data/
+backend/input.json

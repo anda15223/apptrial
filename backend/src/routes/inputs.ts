@@ -1,14 +1,14 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { upsertDailyInput, listDailyInputs } from "../db/fileDb";
 
 export const inputsRouter = Router();
 
-// List all saved days
+// GET /api/inputs  -> list all saved days
 inputsRouter.get("/", (_req, res) => {
   res.json(listDailyInputs());
 });
 
-// Save / update one day
+// POST /api/inputs -> save/update one day
 inputsRouter.post("/", (req, res) => {
   const body = req.body ?? {};
 
@@ -27,4 +27,3 @@ inputsRouter.post("/", (req, res) => {
 
   return res.json(saved);
 });
-

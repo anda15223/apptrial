@@ -1,9 +1,10 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
 import { dashboardRouter } from "./routes/dashboard";
 import { inputsRouter } from "./routes/inputs";
+import { kpisRouter } from "./routes/kpis";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/inputs", inputsRouter);
+app.use("/api/kpis", kpisRouter);
 
 const PORT = Number(process.env.PORT || 3001);
 
