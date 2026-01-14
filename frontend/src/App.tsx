@@ -215,7 +215,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  const salesTargetToday = 25000;
+  const salesTargetToday = 10000;
 
   const derived = useMemo(() => {
     const revToday = kpis?.revenue.today ?? 0;
