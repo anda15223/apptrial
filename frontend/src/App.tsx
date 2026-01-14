@@ -24,7 +24,8 @@ type KpisResponse = {
   };
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://apptrial.onrender.com";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://apptrial.onrender.com";
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 }).format(n);
@@ -52,7 +53,41 @@ function DeltaPill({ value }: { value: number }) {
   );
 }
 
-function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+function StatusPill({ status }: { status: "green" | "yellow" | "red" }) {
+  return (
+    <span
+      className={`pill ${
+        status === "green"
+          ? "pillGreen"
+          : status === "yellow"
+          ? "pillYellow"
+          : "pillRed"
+      }`}
+    >
+      {status.toUpperCase()}
+    </span>
+  );
+}
+
+// For now we use your thresholds (Green<=25, Yellow<=35, Red>35)
+// We'll add separate thresholds for Food % after you confirm them.
+function pctStatus(pct: number | null) {
+  if (pct === null) return "yellow";
+  const p = pct * 100;
+  if (p <= 25) return "green";
+  if (p <= 35) return "yellow";
+  return "red";
+}
+
+function Panel({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="panel">
       <div className="panelHeader">
@@ -80,7 +115,11 @@ function KpiRow({
       <div className="kpiLabel">{label}</div>
       <div className="kpiRight">
         <div className="kpiValue">{value}</div>
-        {typeof delta === "number" ? <DeltaPill value={delta} /> : <span className="pill pillNeutral">—</span>}
+        {typeof delta === "number" ? (
+          <DeltaPill value={delta} />
+        ) : (
+          <span className="pill pillNeutral">—</span>
+        )}
       </div>
     </div>
   );
@@ -103,7 +142,9 @@ function FunnelRow({
       <div className="funnelBar">
         <div className="funnelBarBg">
           <div
-            className={`funnelBarFill ${highlight ? "funnelBarFillGreen" : ""}`}
+            className={`funnelBarFill ${
+              highlight ? "funnelBarFillGreen" : ""
+            }`}
             style={{ width: `${Math.max(2, Math.min(100, percent))}%` }}
           />
         </div>
@@ -127,14 +168,17 @@ function Tile({
       <div className="tileLabel">{label}</div>
       <div className="tileValue">{value}</div>
       <div className="tileFooter">
-        {typeof delta === "number" ? <DeltaPill value={delta} /> : <span className="pill pillNeutral">—</span>}
+        {typeof delta === "number" ? (
+          <DeltaPill value={delta} />
+        ) : (
+          <span className="pill pillNeutral">—</span>
+        )}
       </div>
     </div>
   );
 }
 
 function SalesGauge({ actual, target }: { actual: number; target: number }) {
-  // simple semicircle gauge using CSS conic-gradient in a circle mask
   const pct = target <= 0 ? 0 : Math.min(1, actual / target);
   const angle = Math.round(pct * 180);
 
@@ -215,6 +259,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // ✅ Your target
   const salesTargetToday = 10000;
 
   const derived = useMemo(() => {
@@ -267,7 +312,9 @@ export default function App() {
         <div className="manualHeader">
           <div>
             <div className="panelTitle">Update Today (2 minutes)</div>
-            <div className="panelSubtitle">Manual fallback stays even after APIs</div>
+            <div className="panelSubtitle">
+              Manual fallback stays even after APIs
+            </div>
           </div>
           <button className="btnPrimary" onClick={updateToday}>
             Update Today
@@ -325,28 +372,94 @@ export default function App() {
         <div className="col4">
           <Panel title="Restaurant KPIs" subtitle="Today summary (live)">
             <div className="kpiList">
-              <KpiRow label="Total Sales (Today)" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} delta={+5} />
-              <KpiRow label="Total Sales (Week)" value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`} delta={+3} />
-              <KpiRow label="Total Sales (Month)" value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`} delta={-2} />
+              <KpiRow
+                label="Total Sales (Today)"
+                value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`}
+                delta={+5}
+              />
+              <KpiRow
+                label="Total Sales (Week)"
+                value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`}
+                delta={+3}
+              />
+              <KpiRow
+                label="Total Sales (Month)"
+                value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`}
+                delta={-2}
+              />
               <KpiRow label="Week vs Last Year" value="Coming soon" delta={0} />
-              <KpiRow label="Wolt Sales (Today)" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} delta={+1} />
-              <KpiRow label="Labor Cost (Today)" value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`} />
-              <KpiRow label="Labor % (Today)" value={fmtPct(kpis?.labor.laborPctToday ?? null)} />
-              <KpiRow label="Food Cost (Today)" value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`} />
-              <KpiRow label="Food % (Today)" value={fmtPct(kpis?.cogs.cogsPctToday ?? null)} />
-              <KpiRow label="Profit Estimate (Today)" value={`${fmtMoney(derived.profitEstimateToday)} DKK`} />
+              <KpiRow
+                label="Wolt Sales (Today)"
+                value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`}
+                delta={+1}
+              />
+              <KpiRow
+                label="Labor Cost (Today)"
+                value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`}
+              />
+
+              {/* ✅ Labor % with status */}
+              <div className="kpiRow">
+                <div className="kpiLabel">Labor % (Today)</div>
+                <div className="kpiRight">
+                  <div className="kpiValue">
+                    {fmtPct(kpis?.labor.laborPctToday ?? null)}
+                  </div>
+                  <StatusPill status={pctStatus(kpis?.labor.laborPctToday ?? null)} />
+                </div>
+              </div>
+
+              <KpiRow
+                label="Food Cost (Today)"
+                value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`}
+              />
+
+              {/* ✅ Food % with status (same thresholds for now) */}
+              <div className="kpiRow">
+                <div className="kpiLabel">Food % (Today)</div>
+                <div className="kpiRight">
+                  <div className="kpiValue">
+                    {fmtPct(kpis?.cogs.cogsPctToday ?? null)}
+                  </div>
+                  <StatusPill status={pctStatus(kpis?.cogs.cogsPctToday ?? null)} />
+                </div>
+              </div>
+
+              <KpiRow
+                label="Profit Estimate (Today)"
+                value={`${fmtMoney(derived.profitEstimateToday)} DKK`}
+              />
             </div>
           </Panel>
         </div>
 
         {/* Top middle panel (5/12) */}
         <div className="col5">
-          <Panel title="Sales Funnel / Order Flow" subtitle="Restaurant flow (placeholder until POS import)">
+          <Panel
+            title="Sales Funnel / Order Flow"
+            subtitle="Restaurant flow (placeholder until POS import)"
+          >
             <div className="funnel">
-              <FunnelRow label="Gross Sales" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} percent={90} />
-              <FunnelRow label="Wolt Sales" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} percent={60} />
-              <FunnelRow label="Food Cost" value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`} percent={55} />
-              <FunnelRow label="Labor Cost" value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`} percent={45} />
+              <FunnelRow
+                label="Gross Sales"
+                value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`}
+                percent={90}
+              />
+              <FunnelRow
+                label="Wolt Sales"
+                value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`}
+                percent={60}
+              />
+              <FunnelRow
+                label="Food Cost"
+                value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`}
+                percent={55}
+              />
+              <FunnelRow
+                label="Labor Cost"
+                value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`}
+                percent={45}
+              />
               <FunnelRow
                 label="Profit Estimate"
                 value={`${fmtMoney(derived.profitEstimateToday)} DKK`}
@@ -355,14 +468,18 @@ export default function App() {
               />
             </div>
             <div className="panelNote">
-              Hourly sales + real funnel stages will update once PSO Online API is connected.
+              Hourly sales + real funnel stages will update once PSO Online API
+              is connected.
             </div>
           </Panel>
         </div>
 
         {/* Top right panel (3/12) */}
         <div className="col3">
-          <Panel title="Leaderboard" subtitle="Top products (coming with POS data)">
+          <Panel
+            title="Leaderboard"
+            subtitle="Top products (coming with POS data)"
+          >
             <div className="table">
               <div className="tableHeader">
                 <div>Rank</div>
@@ -386,7 +503,8 @@ export default function App() {
               ))}
 
               <div className="panelNote">
-                This will become real automatically when PSO Online provides product lines.
+                This will become real automatically when PSO Online provides
+                product lines.
               </div>
             </div>
           </Panel>
@@ -395,12 +513,34 @@ export default function App() {
         {/* Bottom left (9/12) - tiles */}
         <div className="col9">
           <div className="tilesGrid">
-            <Tile label="Sales Today" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} delta={+5} />
-            <Tile label="Sales This Week" value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`} delta={+3} />
-            <Tile label="Sales This Month" value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`} delta={-2} />
-            <Tile label="Wolt Today" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} delta={+1} />
-            <Tile label="Labor % Today" value={fmtPct(kpis?.labor.laborPctToday ?? null)} />
-            <Tile label="Food % Today" value={fmtPct(kpis?.cogs.cogsPctToday ?? null)} />
+            <Tile
+              label="Sales Today"
+              value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`}
+              delta={+5}
+            />
+            <Tile
+              label="Sales This Week"
+              value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`}
+              delta={+3}
+            />
+            <Tile
+              label="Sales This Month"
+              value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`}
+              delta={-2}
+            />
+            <Tile
+              label="Wolt Today"
+              value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`}
+              delta={+1}
+            />
+            <Tile
+              label="Labor % Today"
+              value={fmtPct(kpis?.labor.laborPctToday ?? null)}
+            />
+            <Tile
+              label="Food % Today"
+              value={fmtPct(kpis?.cogs.cogsPctToday ?? null)}
+            />
           </div>
         </div>
 
@@ -413,7 +553,8 @@ export default function App() {
       </div>
 
       <div className="footerNote">
-        Next upgrades: location dropdown (7 locations), KPI colors, Week vs Last Year, hourly sales import.
+        Next upgrades: location dropdown (7 locations), KPI colors, Week vs Last
+        Year, hourly sales import.
       </div>
     </div>
   );
