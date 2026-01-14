@@ -17,8 +17,6 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/dashboard", dashboardRouter);
-
-// ✅ THIS is the missing part that causes: "Cannot POST /api/inputs"
 app.use("/api/inputs", inputsRouter);
 
 const PORT = Number(process.env.PORT || 3001);
@@ -26,3 +24,4 @@ const PORT = Number(process.env.PORT || 3001);
 app.listen(PORT, () => {
   console.log(`[backend] listening on http://localhost:${PORT}`);
 });
+
