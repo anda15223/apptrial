@@ -69,13 +69,35 @@ function StatusPill({ status }: { status: "green" | "yellow" | "red" }) {
   );
 }
 
-// For now we use your thresholds (Green<=25, Yellow<=35, Red>35)
-// We'll add separate thresholds for Food % after you confirm them.
-function pctStatus(pct: number | null) {
+/**
+ * Labor thresholds:
+ * Green <= 25%
+ * Yellow <= 35%
+ * Red > 35%
+ */
+function laborPctStatus(pct: number | null): "green" | "yellow" | "red" {
   if (pct === null) return "yellow";
   const p = pct * 100;
   if (p <= 25) return "green";
   if (p <= 35) return "yellow";
+  return "red";
+}
+
+/**
+ * Food thresholds (your input):
+ * Green <= 23%
+ * Yellow <= 25%
+ * Red >= 28%
+ *
+ * NOTE:
+ * - 26-27% will still show red (because it’s above Yellow).
+ *   You can tell me if you want a special "orange" later.
+ */
+function foodPctStatus(pct: number | null): "green" | "yellow" | "red" {
+  if (pct === null) return "yellow";
+  const p = pct * 100;
+  if (p <= 23) return "green";
+  if (p <= 25) return "yellow";
   return "red";
 }
 
@@ -307,7 +329,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Manual update panel (kept, but styled) */}
+      {/* Manual update panel */}
       <div className="manualPanel">
         <div className="manualHeader">
           <div>
@@ -368,7 +390,7 @@ export default function App() {
 
       {/* Main dashboard grid */}
       <div className="grid12">
-        {/* Top left panel (4/12) */}
+        {/* Top left panel */}
         <div className="col4">
           <Panel title="Restaurant KPIs" subtitle="Today summary (live)">
             <div className="kpiList">
@@ -398,14 +420,16 @@ export default function App() {
                 value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`}
               />
 
-              {/* ✅ Labor % with status */}
+              {/* Labor % with thresholds */}
               <div className="kpiRow">
                 <div className="kpiLabel">Labor % (Today)</div>
                 <div className="kpiRight">
                   <div className="kpiValue">
                     {fmtPct(kpis?.labor.laborPctToday ?? null)}
                   </div>
-                  <StatusPill status={pctStatus(kpis?.labor.laborPctToday ?? null)} />
+                  <StatusPill
+                    status={laborPctStatus(kpis?.labor.laborPctToday ?? null)}
+                  />
                 </div>
               </div>
 
@@ -414,14 +438,16 @@ export default function App() {
                 value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`}
               />
 
-              {/* ✅ Food % with status (same thresholds for now) */}
+              {/* Food % with thresholds */}
               <div className="kpiRow">
                 <div className="kpiLabel">Food % (Today)</div>
                 <div className="kpiRight">
                   <div className="kpiValue">
                     {fmtPct(kpis?.cogs.cogsPctToday ?? null)}
                   </div>
-                  <StatusPill status={pctStatus(kpis?.cogs.cogsPctToday ?? null)} />
+                  <StatusPill
+                    status={foodPctStatus(kpis?.cogs.cogsPctToday ?? null)}
+                  />
                 </div>
               </div>
 
@@ -433,7 +459,7 @@ export default function App() {
           </Panel>
         </div>
 
-        {/* Top middle panel (5/12) */}
+        {/* Top middle panel */}
         <div className="col5">
           <Panel
             title="Sales Funnel / Order Flow"
@@ -474,7 +500,7 @@ export default function App() {
           </Panel>
         </div>
 
-        {/* Top right panel (3/12) */}
+        {/* Top right panel */}
         <div className="col3">
           <Panel
             title="Leaderboard"
@@ -510,7 +536,7 @@ export default function App() {
           </Panel>
         </div>
 
-        {/* Bottom left (9/12) - tiles */}
+        {/* Bottom left tiles */}
         <div className="col9">
           <div className="tilesGrid">
             <Tile
@@ -544,7 +570,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Bottom right (3/12) - gauge */}
+        {/* Bottom right gauge */}
         <div className="col3">
           <Panel title="Sales vs Target" subtitle="Today progress">
             <SalesGauge actual={derived.revToday} target={salesTargetToday} />
@@ -553,8 +579,8 @@ export default function App() {
       </div>
 
       <div className="footerNote">
-        Next upgrades: location dropdown (7 locations), KPI colors, Week vs Last
-        Year, hourly sales import.
+        Next upgrades: location dropdown (7 locations), Week vs Last Year, hourly
+        sales import.
       </div>
     </div>
   );
