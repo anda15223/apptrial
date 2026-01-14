@@ -1,7 +1,7 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-type KpiResponse = {
+type KpisResponse = {
   date: string;
   revenue: {
     today: number;
@@ -12,7 +12,7 @@ type KpiResponse = {
   };
   wolt: {
     today: number;
-    byDay: Array<{ date: string; revenue: number }>;
+    byDay: { date: string; revenue: number }[];
   };
   labor: {
     todayCost: number;
@@ -24,233 +24,397 @@ type KpiResponse = {
   };
 };
 
-type DailyInput = {
-  date: string;
-  totalRevenue: number;
-  woltRevenue: number;
-  laborCost: number;
-  bcGroceryCost: number;
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://apptrial.onrender.com";
 
-function money(n: number) {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
+function fmtMoney(n: number) {
+  return new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 }).format(n);
 }
-
-function pct(n: number | null) {
+function fmtPct(n: number | null) {
   if (n === null) return "—";
-  return `${(n * 100).toFixed(1)}%`;
+  return `${Math.round(n * 100)}%`;
 }
 
-export default function App() {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+function getTodayIso() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [kpis, setKpis] = useState<KpiResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const [form, setForm] = useState<DailyInput>({
-    date: new Date().toISOString().slice(0, 10),
-    totalRevenue: 0,
-    woltRevenue: 0,
-    laborCost: 0,
-    bcGroceryCost: 0,
-  });
-
-  const loadKpis = async () => {
-    try {
-      setError(null);
-      const res = await fetch(`${API_BASE_URL}/api/kpis?date=${date}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as KpiResponse;
-      setKpis(json);
-    } catch (e: any) {
-      setError(e?.message || "Unknown error");
-    }
-  };
-
-  useEffect(() => {
-    loadKpis();
-    const id = window.setInterval(loadKpis, 60_000);
-    return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API_BASE_URL, date]);
-
-  const saveToday = async () => {
-    try {
-      setError(null);
-
-      const res = await fetch(`${API_BASE_URL}/api/inputs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Save failed: HTTP ${res.status} ${txt}`);
-      }
-
-      setDate(form.date);
-      await loadKpis();
-    } catch (e: any) {
-      setError(e?.message || "Unknown error");
-    }
-  };
-
+function DeltaPill({ value }: { value: number }) {
+  const isPositive = value >= 0;
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
-      <h1>Restaurant KPI Dashboard</h1>
+    <span className={`pill ${isPositive ? "pillGreen" : "pillRed"}`}>
+      {isPositive ? "+" : ""}
+      {value}%
+    </span>
+  );
+}
 
-      <div style={{ marginTop: 6, opacity: 0.8 }}>
-        API: <code>{API_BASE_URL}</code> (auto refresh 60 sec)
-      </div>
-
-      <div style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 10, padding: 14 }}>
-        <h2 style={{ marginTop: 0 }}>Update Today (2 minutes)</h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Field label="Date (YYYY-MM-DD)">
-            <input style={inputStyle} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          </Field>
-
-          <Field label="Total Revenue (DKK)">
-            <input
-              style={inputStyle}
-              type="number"
-              value={form.totalRevenue}
-              onChange={(e) => setForm({ ...form, totalRevenue: Number(e.target.value) })}
-            />
-          </Field>
-
-          <Field label="Wolt Revenue (DKK)">
-            <input
-              style={inputStyle}
-              type="number"
-              value={form.woltRevenue}
-              onChange={(e) => setForm({ ...form, woltRevenue: Number(e.target.value) })}
-            />
-          </Field>
-
-          <Field label="Labor Cost (Planday shifts cost) (DKK)">
-            <input
-              style={inputStyle}
-              type="number"
-              value={form.laborCost}
-              onChange={(e) => setForm({ ...form, laborCost: Number(e.target.value) })}
-            />
-          </Field>
-
-          <Field label="BC Grocery Cost (DKK)">
-            <input
-              style={inputStyle}
-              type="number"
-              value={form.bcGroceryCost}
-              onChange={(e) => setForm({ ...form, bcGroceryCost: Number(e.target.value) })}
-            />
-          </Field>
+function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="panel">
+      <div className="panelHeader">
+        <div>
+          <div className="panelTitle">{title}</div>
+          {subtitle ? <div className="panelSubtitle">{subtitle}</div> : null}
         </div>
-
-        <button
-          onClick={saveToday}
-          style={{
-            marginTop: 12,
-            width: "100%",
-            padding: 12,
-            borderRadius: 10,
-            border: "1px solid #111",
-            background: "#111",
-            color: "white",
-            fontWeight: 800,
-            fontSize: 16,
-          }}
-        >
-          Update Today
-        </button>
       </div>
-
-      <div style={{ marginTop: 16 }}>
-        <label style={{ fontWeight: 700 }}>Dashboard Date:</label>
-        <input style={{ ...inputStyle, marginTop: 6 }} value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
-
-      {error && (
-        <div style={{ marginTop: 12, padding: 12, border: "1px solid red", borderRadius: 8 }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {!kpis && !error && <p style={{ marginTop: 12 }}>Loading KPIs...</p>}
-
-      {kpis && (
-        <>
-          <h2 style={{ marginTop: 16 }}>KPIs for {kpis.date}</h2>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-            <Card title="Daily Revenue" value={`${money(kpis.revenue.today)} DKK`} />
-            <Card title="Weekly Revenue" value={`${money(kpis.revenue.week)} DKK`} />
-            <Card title="Monthly Revenue" value={`${money(kpis.revenue.month)} DKK`} />
-            <Card title="Yearly Revenue" value={`${money(kpis.revenue.year)} DKK`} />
-            <Card title="Last Year (Same Day)" value={`${money(kpis.revenue.lastYearSameDay)} DKK`} />
-            <Card title="Wolt Revenue (Today)" value={`${money(kpis.wolt.today)} DKK`} />
-            <Card title="Labor Cost (Today)" value={`${money(kpis.labor.todayCost)} DKK`} />
-            <Card title="Labor Cost % (Today)" value={pct(kpis.labor.laborPctToday)} />
-            <Card title="BC Grocery Cost (Today)" value={`${money(kpis.cogs.todayCost)} DKK`} />
-            <Card title="COGS % (Today)" value={pct(kpis.cogs.cogsPctToday)} />
-          </div>
-
-          <h2 style={{ marginTop: 16 }}>Wolt Revenue by Day (last 7 days)</h2>
-
-          <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
-            {kpis.wolt.byDay.length === 0 ? (
-              <p>No data yet.</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #eee" }}>Date</th>
-                    <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>Wolt Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kpis.wolt.byDay.map((x) => (
-                    <tr key={x.date}>
-                      <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>{x.date}</td>
-                      <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f3f3f3" }}>
-                        {money(x.revenue)} DKK
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
-      )}
+      <div className="panelBody">{children}</div>
     </div>
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: 10,
-  borderRadius: 8,
-  border: "1px solid #ccc",
-};
-
-function Field(props: { label: string; children: React.ReactNode }) {
+function KpiRow({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta?: number;
+}) {
   return (
-    <label style={{ display: "block" }}>
-      <div style={{ fontWeight: 700 }}>{props.label}</div>
-      <div style={{ marginTop: 6 }}>{props.children}</div>
-    </label>
+    <div className="kpiRow">
+      <div className="kpiLabel">{label}</div>
+      <div className="kpiRight">
+        <div className="kpiValue">{value}</div>
+        {typeof delta === "number" ? <DeltaPill value={delta} /> : <span className="pill pillNeutral">—</span>}
+      </div>
+    </div>
   );
 }
 
-function Card(props: { title: string; value: string }) {
+function FunnelRow({
+  label,
+  value,
+  percent,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  percent: number;
+  highlight?: boolean;
+}) {
   return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14 }}>
-      <div style={{ opacity: 0.7, fontSize: 13 }}>{props.title}</div>
-      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 6 }}>{props.value}</div>
+    <div className="funnelRow">
+      <div className="funnelLabel">{label}</div>
+      <div className="funnelBar">
+        <div className="funnelBarBg">
+          <div
+            className={`funnelBarFill ${highlight ? "funnelBarFillGreen" : ""}`}
+            style={{ width: `${Math.max(2, Math.min(100, percent))}%` }}
+          />
+        </div>
+      </div>
+      <div className="funnelValue">{value}</div>
+    </div>
+  );
+}
+
+function Tile({
+  label,
+  value,
+  delta,
+}: {
+  label: string;
+  value: string;
+  delta?: number;
+}) {
+  return (
+    <div className="tile">
+      <div className="tileLabel">{label}</div>
+      <div className="tileValue">{value}</div>
+      <div className="tileFooter">
+        {typeof delta === "number" ? <DeltaPill value={delta} /> : <span className="pill pillNeutral">—</span>}
+      </div>
+    </div>
+  );
+}
+
+function SalesGauge({ actual, target }: { actual: number; target: number }) {
+  // simple semicircle gauge using CSS conic-gradient in a circle mask
+  const pct = target <= 0 ? 0 : Math.min(1, actual / target);
+  const angle = Math.round(pct * 180);
+
+  return (
+    <div className="gaugeWrap">
+      <div
+        className="gauge"
+        style={{
+          background: `conic-gradient(from 180deg, rgba(255,255,255,0.08) 0deg, rgba(255,255,255,0.08) 180deg)`,
+        }}
+      >
+        <div
+          className="gaugeFill"
+          style={{
+            background: `conic-gradient(from 180deg, rgba(74,222,128,0.9) 0deg, rgba(74,222,128,0.9) ${angle}deg, rgba(255,255,255,0.08) ${angle}deg, rgba(255,255,255,0.08) 180deg)`,
+          }}
+        />
+        <div className="gaugeInner" />
+        <div className="gaugeCenter">
+          <div className="gaugeNumber">{fmtMoney(actual)} DKK</div>
+          <div className="gaugeSub">Target: {fmtMoney(target)} DKK</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [date, setDate] = useState(getTodayIso());
+  const [kpis, setKpis] = useState<KpisResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // manual inputs
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [woltRevenue, setWoltRevenue] = useState<number>(0);
+  const [laborCost, setLaborCost] = useState<number>(0);
+  const [bcGroceryCost, setBcGroceryCost] = useState<number>(0);
+
+  const locationName = "Aarhus (Gaia)";
+
+  async function loadKpis() {
+    try {
+      setError(null);
+      const res = await fetch(`${API_BASE_URL}/api/kpis?date=${date}`);
+      if (!res.ok) throw new Error(`KPIs error: ${res.status}`);
+      const data = (await res.json()) as KpisResponse;
+      setKpis(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to fetch KPIs");
+    }
+  }
+
+  async function updateToday() {
+    try {
+      setError(null);
+      const res = await fetch(`${API_BASE_URL}/api/inputs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date,
+          totalRevenue,
+          woltRevenue,
+          laborCost,
+          bcGroceryCost,
+        }),
+      });
+      if (!res.ok) throw new Error(`Update error: ${res.status}`);
+      await loadKpis();
+    } catch (e: any) {
+      setError(e?.message || "Update failed");
+    }
+  }
+
+  useEffect(() => {
+    loadKpis();
+    const t = setInterval(loadKpis, 60_000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
+
+  const salesTargetToday = 25000;
+
+  const derived = useMemo(() => {
+    const revToday = kpis?.revenue.today ?? 0;
+    const woltToday = kpis?.wolt.today ?? 0;
+    const laborToday = kpis?.labor.todayCost ?? 0;
+    const cogsToday = kpis?.cogs.todayCost ?? 0;
+
+    const profitEstimateToday = revToday - laborToday - cogsToday;
+
+    return {
+      revToday,
+      woltToday,
+      laborToday,
+      cogsToday,
+      profitEstimateToday,
+    };
+  }, [kpis]);
+
+  return (
+    <div className="page">
+      <div className="topHeader">
+        <div className="brand">
+          <div className="brandTitle">Restaurant Dashboard</div>
+          <div className="brandSub">
+            Location: <span className="brandSubStrong">{locationName}</span>
+          </div>
+        </div>
+
+        <div className="topControls">
+          <div className="controlBlock">
+            <div className="controlLabel">Dashboard Date</div>
+            <input
+              className="input"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              placeholder="YYYY-MM-DD"
+            />
+          </div>
+
+          <div className="controlBlock">
+            <div className="controlLabel">API</div>
+            <div className="apiLine">{API_BASE_URL} (auto refresh 60 sec)</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Manual update panel (kept, but styled) */}
+      <div className="manualPanel">
+        <div className="manualHeader">
+          <div>
+            <div className="panelTitle">Update Today (2 minutes)</div>
+            <div className="panelSubtitle">Manual fallback stays even after APIs</div>
+          </div>
+          <button className="btnPrimary" onClick={updateToday}>
+            Update Today
+          </button>
+        </div>
+
+        <div className="manualGrid">
+          <div className="field">
+            <div className="fieldLabel">Total Revenue (DKK)</div>
+            <input
+              className="input"
+              type="number"
+              value={totalRevenue}
+              onChange={(e) => setTotalRevenue(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="field">
+            <div className="fieldLabel">Wolt Revenue (DKK)</div>
+            <input
+              className="input"
+              type="number"
+              value={woltRevenue}
+              onChange={(e) => setWoltRevenue(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="field">
+            <div className="fieldLabel">Labor Cost (DKK)</div>
+            <input
+              className="input"
+              type="number"
+              value={laborCost}
+              onChange={(e) => setLaborCost(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="field">
+            <div className="fieldLabel">Food Cost (BC Grocery) (DKK)</div>
+            <input
+              className="input"
+              type="number"
+              value={bcGroceryCost}
+              onChange={(e) => setBcGroceryCost(Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        {error ? <div className="errorBox">Error: {error}</div> : null}
+      </div>
+
+      {/* Main dashboard grid */}
+      <div className="grid12">
+        {/* Top left panel (4/12) */}
+        <div className="col4">
+          <Panel title="Restaurant KPIs" subtitle="Today summary (live)">
+            <div className="kpiList">
+              <KpiRow label="Total Sales (Today)" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} delta={+5} />
+              <KpiRow label="Total Sales (Week)" value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`} delta={+3} />
+              <KpiRow label="Total Sales (Month)" value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`} delta={-2} />
+              <KpiRow label="Week vs Last Year" value="Coming soon" delta={0} />
+              <KpiRow label="Wolt Sales (Today)" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} delta={+1} />
+              <KpiRow label="Labor Cost (Today)" value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`} />
+              <KpiRow label="Labor % (Today)" value={fmtPct(kpis?.labor.laborPctToday ?? null)} />
+              <KpiRow label="Food Cost (Today)" value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`} />
+              <KpiRow label="Food % (Today)" value={fmtPct(kpis?.cogs.cogsPctToday ?? null)} />
+              <KpiRow label="Profit Estimate (Today)" value={`${fmtMoney(derived.profitEstimateToday)} DKK`} />
+            </div>
+          </Panel>
+        </div>
+
+        {/* Top middle panel (5/12) */}
+        <div className="col5">
+          <Panel title="Sales Funnel / Order Flow" subtitle="Restaurant flow (placeholder until POS import)">
+            <div className="funnel">
+              <FunnelRow label="Gross Sales" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} percent={90} />
+              <FunnelRow label="Wolt Sales" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} percent={60} />
+              <FunnelRow label="Food Cost" value={`${fmtMoney(kpis?.cogs.todayCost ?? 0)} DKK`} percent={55} />
+              <FunnelRow label="Labor Cost" value={`${fmtMoney(kpis?.labor.todayCost ?? 0)} DKK`} percent={45} />
+              <FunnelRow
+                label="Profit Estimate"
+                value={`${fmtMoney(derived.profitEstimateToday)} DKK`}
+                percent={70}
+                highlight
+              />
+            </div>
+            <div className="panelNote">
+              Hourly sales + real funnel stages will update once PSO Online API is connected.
+            </div>
+          </Panel>
+        </div>
+
+        {/* Top right panel (3/12) */}
+        <div className="col3">
+          <Panel title="Leaderboard" subtitle="Top products (coming with POS data)">
+            <div className="table">
+              <div className="tableHeader">
+                <div>Rank</div>
+                <div>Product</div>
+                <div className="right">Units</div>
+                <div className="right">Revenue</div>
+              </div>
+
+              {[
+                { r: 1, p: "Fish & Chips", u: 0, v: 0 },
+                { r: 2, p: "Burger Menu", u: 0, v: 0 },
+                { r: 3, p: "Shrimp Menu", u: 0, v: 0 },
+                { r: 4, p: "Mix Plate", u: 0, v: 0 },
+              ].map((x) => (
+                <div className="tableRow" key={x.r}>
+                  <div className="muted">{x.r}</div>
+                  <div className="bright">{x.p}</div>
+                  <div className="right muted">{x.u}</div>
+                  <div className="right bright">{fmtMoney(x.v)} DKK</div>
+                </div>
+              ))}
+
+              <div className="panelNote">
+                This will become real automatically when PSO Online provides product lines.
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        {/* Bottom left (9/12) - tiles */}
+        <div className="col9">
+          <div className="tilesGrid">
+            <Tile label="Sales Today" value={`${fmtMoney(kpis?.revenue.today ?? 0)} DKK`} delta={+5} />
+            <Tile label="Sales This Week" value={`${fmtMoney(kpis?.revenue.week ?? 0)} DKK`} delta={+3} />
+            <Tile label="Sales This Month" value={`${fmtMoney(kpis?.revenue.month ?? 0)} DKK`} delta={-2} />
+            <Tile label="Wolt Today" value={`${fmtMoney(kpis?.wolt.today ?? 0)} DKK`} delta={+1} />
+            <Tile label="Labor % Today" value={fmtPct(kpis?.labor.laborPctToday ?? null)} />
+            <Tile label="Food % Today" value={fmtPct(kpis?.cogs.cogsPctToday ?? null)} />
+          </div>
+        </div>
+
+        {/* Bottom right (3/12) - gauge */}
+        <div className="col3">
+          <Panel title="Sales vs Target" subtitle="Today progress">
+            <SalesGauge actual={derived.revToday} target={salesTargetToday} />
+          </Panel>
+        </div>
+      </div>
+
+      <div className="footerNote">
+        Next upgrades: location dropdown (7 locations), KPI colors, Week vs Last Year, hourly sales import.
+      </div>
     </div>
   );
 }
