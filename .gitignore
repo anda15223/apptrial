@@ -5,3 +5,4 @@ dist
 # Backend local DB + test files
 backend/data/
 backend/input.json
+node_modules/
