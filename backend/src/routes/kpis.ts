@@ -1,13 +1,23 @@
-﻿import { Router } from "express";
-import { listDailyInputs } from "../db/fileDb";
+﻿import express from "express";
+import { listDailyInputs } from "../db/supabaseDb";
 import { computeKpis } from "../kpi/engine";
-import { todayIso } from "../utils/date";
 
-export const kpisRouter = Router();
+export const kpisRouter = express.Router();
 
-// GET /api/kpis?date=YYYY-MM-DD
-kpisRouter.get("/", (req, res) => {
-  const date = typeof req.query.date === "string" ? req.query.date : todayIso();
-  const all = listDailyInputs();
-  res.json(computeKpis(all, date));
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+kpisRouter.get("/", async (req, res) => {
+  try {
+    const date = typeof req.query.date === "string" ? req.query.date : todayIso();
+
+    const all = await listDailyInputs();
+    const result = computeKpis(all, date);
+
+    res.json(result);
+  } catch (err: any) {
+    console.error("GET /api/kpis error:", err);
+    res.status(500).json({ error: "Failed to compute KPIs" });
+  }
 });
