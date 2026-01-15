@@ -253,6 +253,32 @@ export default function App() {
     }
   }
 
+  async function loadManualInputsForDate(selectedDate: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/inputs`);
+      if (!res.ok) throw new Error(`Inputs error: ${res.status}`);
+
+      const rows = (await res.json()) as any[];
+      const row = rows.find((r) => r.date === selectedDate);
+
+      if (!row) {
+        setTotalRevenue(0);
+        setWoltRevenue(0);
+        setLaborCost(0);
+        setBcGroceryCost(0);
+        return;
+      }
+
+      // NOTE: must match API response keys (camelCase)
+      setTotalRevenue(Number(row.totalRevenue ?? 0));
+      setWoltRevenue(Number(row.woltRevenue ?? 0));
+      setLaborCost(Number(row.laborCost ?? 0));
+      setBcGroceryCost(Number(row.bcGroceryCost ?? 0));
+    } catch (e) {
+      console.warn("Failed to load manual inputs:", e);
+    }
+  }
+
   async function updateToday() {
     try {
       setError(null);
@@ -268,7 +294,9 @@ export default function App() {
         }),
       });
       if (!res.ok) throw new Error(`Update error: ${res.status}`);
+
       await loadKpis();
+      await loadManualInputsForDate(date);
     } catch (e: any) {
       setError(e?.message || "Update failed");
     }
@@ -276,6 +304,8 @@ export default function App() {
 
   useEffect(() => {
     loadKpis();
+    loadManualInputsForDate(date);
+
     const t = setInterval(loadKpis, 60_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
