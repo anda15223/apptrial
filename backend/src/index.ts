@@ -6,6 +6,7 @@ import { dashboardRouter } from "./routes/dashboard";
 import { inputsRouter } from "./routes/inputs";
 import { kpisRouter } from "./routes/kpis";
 import { posRouter } from "./routes/pos";
+import { importRouter } from "./routes/import";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/inputs", inputsRouter);
 app.use("/api/kpis", kpisRouter);
 app.use("/api/pos", posRouter);
+app.use("/api/import", importRouter);
 
 // Simple health endpoint (so Render/Netlify can test it)
 app.get("/api/health", (_req, res) => {
@@ -28,4 +30,3 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 app.listen(PORT, () => {
   console.log(`✅ Backend listening on port ${PORT}`);
 });
-
