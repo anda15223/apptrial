@@ -12,6 +12,12 @@ export type DailyInput = {
 export async function upsertDailyInput(
   input: Omit<DailyInput, "updatedAt">
 ): Promise<DailyInput> {
+  if (!supabase) {
+    throw new Error(
+      "Supabase is disabled (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY). Cannot upsert daily input."
+    );
+  }
+
   const row = {
     date: input.date,
     total_revenue: input.totalRevenue,
@@ -40,6 +46,12 @@ export async function upsertDailyInput(
 }
 
 export async function listDailyInputs(): Promise<DailyInput[]> {
+  // ✅ Allow KPI engine to work without Supabase
+  // This lets the dashboard show POS live revenue even if Supabase is not configured yet.
+  if (!supabase) {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("daily_inputs")
     .select("*")
@@ -47,7 +59,7 @@ export async function listDailyInputs(): Promise<DailyInput[]> {
 
   if (error) throw error;
 
-  return (data ?? []).map((x) => ({
+  return (data ?? []).map((x: any) => ({
     date: x.date,
     totalRevenue: Number(x.total_revenue),
     woltRevenue: Number(x.wolt_revenue),

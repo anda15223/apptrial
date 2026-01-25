@@ -1,414 +1,121 @@
 ﻿import express from "express";
-import { listDailyInputs } from "../db/supabaseDb";
-import { computeKpis } from "../kpi/engine";
-import { startOfMonthIso, startOfYearIso } from "../utils/date";
+import {
+  getBasicSalesByDate,
+  getBasicSalesByMonth,
+  getBasicSalesByWeek,
+  getBasicSalesByYear,
+} from "../integrations/posOnline";
 
 export const kpisRouter = express.Router();
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function toUnixSeconds(dateIso: string, endOfDay: boolean): number {
-  // Do NOT force UTC with "Z" because POS is local Denmark time
-  const d = new Date(`${dateIso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return 0;
-
-  if (endOfDay) {
-    d.setHours(23, 59, 59, 999);
+function parseDateOrThrow(d?: string): string {
+  if (!d) throw new Error("Missing date");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    throw new Error("Invalid date format (YYYY-MM-DD)");
   }
-
-  return Math.floor(d.getTime() / 1000);
+  return d;
 }
 
-function parseRevenue(value: any): number {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
+// ISO week number + ISO week year
+function getIsoWeek(dateStr: string) {
+  const date = new Date(dateStr + "T00:00:00");
+  const target = new Date(date.valueOf());
 
-function addDaysIso(dateIso: string, days: number): string {
-  const d = new Date(dateIso + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+  // ISO week uses Thursday as anchor
+  const dayNr = (date.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
 
-type FetchPosOpts = {
-  /**
-   * If provided, overrides the computed "to" unix timestamp.
-   * Used for LIVE "today" (00:00 -> now) rather than end-of-day.
-   */
-  toUnixOverride?: number;
-};
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const firstDayNr = (firstThursday.getDay() + 6) % 7;
+  firstThursday.setDate(firstThursday.getDate() - firstDayNr + 3);
 
-async function fetchPosRevenueMax2Days(
-  fromDate: string,
-  toDate: string,
-  opts?: FetchPosOpts
-) {
-  const token = process.env.POS_API_TOKEN;
-  const firmaid = process.env.POS_FIRMAID;
-
-  if (!token) throw new Error("Missing POS_API_TOKEN");
-  if (!firmaid) throw new Error("Missing POS_FIRMAID");
-
-  const targetFirmaId = Number(firmaid);
-
-  const fromUnix = toUnixSeconds(fromDate, false);
-  const computedToUnix = toUnixSeconds(toDate, true);
-  const toUnix =
-    typeof opts?.toUnixOverride === "number"
-      ? opts.toUnixOverride
-      : computedToUnix;
-
-  // Safety: never allow toUnix earlier than fromUnix
-  const safeToUnix = Math.max(toUnix, fromUnix);
-
-  const url = `https://api.onlinepos.dk/api/koncern/getKoncernRevenue/${fromUnix}/${safeToUnix}`;
-
-  const r = await fetch(url, {
-    method: "GET",
-    headers: {
-      token: token,
-      firmaid: String(firmaid),
-      Accept: "application/json",
-    },
-  });
-
-  if (!r.ok) {
-    const text = await r.text();
-    throw new Error(`POS API failed (${r.status}): ${text || "no body"}`);
-  }
-
-  const data: any = await r.json();
-
-  const entries = Array.isArray(data?.entries)
-    ? data.entries
-    : Array.isArray(data)
-    ? data
-    : [];
-
-  // Filter to ONLY your store POS_FIRMAID
-  const filtered = entries.filter((x: any) => {
-    const fid = Number(x?.entry?.firmaid);
-    return Number.isFinite(fid) && fid === targetFirmaId;
-  });
-
-  const total = filtered.reduce((acc: number, x: any) => {
-    return acc + parseRevenue(x?.entry?.revenue);
-  }, 0);
-
-  return {
-    total,
-    entriesCount: filtered.length,
-    url,
-  };
-}
-
-/**
- * ✅ Run promises with concurrency limit
- */
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let index = 0;
-
-  const workers = Array.from({ length: Math.max(1, limit) }, async () => {
-    while (true) {
-      const currentIndex = index;
-      index += 1;
-
-      if (currentIndex >= items.length) return;
-
-      results[currentIndex] = await fn(items[currentIndex]);
-    }
-  });
-
-  await Promise.all(workers);
-  return results;
-}
-
-/**
- * POS API only allows max 2-day range.
- * This function automatically sums many requests to cover a long range.
- *
- * ✅ Optimized: runs POS requests concurrently (but limited) for speed.
- */
-async function fetchPosRevenueAutoRange(fromDate: string, toDate: string) {
-  if (fromDate > toDate) return { total: 0, chunks: 0 };
-
-  // Build all chunk ranges first
-  const ranges: Array<{ from: string; to: string }> = [];
-
-  let cursor = fromDate;
-  while (cursor <= toDate) {
-    const chunkEnd = addDaysIso(cursor, 1); // 2-day window
-    const actualEnd = chunkEnd <= toDate ? chunkEnd : toDate;
-
-    ranges.push({ from: cursor, to: actualEnd });
-    cursor = addDaysIso(actualEnd, 1);
-  }
-
-  // ✅ Concurrency limit (safe for POS + Render)
-  const POS_CONCURRENCY = 3;
-
-  const chunkResults = await mapWithConcurrency(ranges, POS_CONCURRENCY, (r) =>
-    fetchPosRevenueMax2Days(r.from, r.to)
-  );
-
-  const total = chunkResults.reduce((acc, c) => acc + c.total, 0);
-
-  return { total, chunks: ranges.length };
-}
-
-/**
- * ✅ Simple in-memory KPI cache (per server instance)
- */
-type CachedKpi = {
-  expiresAtMs: number;
-  payload: any;
-};
-
-const KPI_CACHE_TTL_MS = 60_000; // 60 seconds
-const kpiCache = new Map<string, CachedKpi>();
-
-/**
- * ✅ In-flight de-duplication for KPIs (per server instance)
- */
-const inFlightKpi = new Map<string, Promise<any>>();
-
-/**
- * ✅ POS range cache to avoid re-fetching month/year ranges repeatedly
- * Key: posRange:<from>..<to>
- */
-type CachedPosRange = {
-  expiresAtMs: number;
-  value: { total: number; chunks: number };
-};
-
-const POS_RANGE_CACHE_TTL_MS = 5 * 60_000; // 5 minutes
-const posRangeCache = new Map<string, CachedPosRange>();
-const inFlightPosRange = new Map<
-  string,
-  Promise<{ total: number; chunks: number }>
->();
-
-async function fetchPosRevenueAutoRangeCached(fromDate: string, toDate: string) {
-  const key = `posRange:${fromDate}..${toDate}`;
-
-  const cached = posRangeCache.get(key);
-  if (cached && Date.now() < cached.expiresAtMs) {
-    return cached.value;
-  }
-
-  const existing = inFlightPosRange.get(key);
-  if (existing) {
-    return existing;
-  }
-
-  const p = (async () => {
-    const value = await fetchPosRevenueAutoRange(fromDate, toDate);
-    posRangeCache.set(key, {
-      expiresAtMs: Date.now() + POS_RANGE_CACHE_TTL_MS,
-      value,
-    });
-    return value;
-  })();
-
-  inFlightPosRange.set(key, p);
-
-  try {
-    return await p;
-  } finally {
-    inFlightPosRange.delete(key);
-  }
-}
-
-/**
- * ✅ IMPORTANT:
- * POS API (api.onlinepos.dk) returns [] for today until POS closes the day.
- * But POS BackOffice (rest.onlinepos.dk) DOES return live revenue.
- *
- * So for TODAY:
- * 1) Use BackOffice /reports/getBasicSales (cookie + xsrf)
- * 2) If that fails, fallback to yesterday (last resort)
- */
-async function getPosTodayWithFallback(date: string) {
-  const today = todayIso();
-
-  if (date !== today) {
-    return {
-      posToday: null as number | null,
-      usedDate: null as string | null,
-      source: "not-today" as const,
-    };
-  }
-
-  // 1) ✅ Live revenue via BackOffice (works during open day)
-  try {
-    const POS_BO_COOKIE = process.env.POS_BO_COOKIE;
-    const POS_BO_XSRF = process.env.POS_BO_XSRF;
-
-    if (!POS_BO_COOKIE) throw new Error("Missing POS_BO_COOKIE");
-    if (!POS_BO_XSRF) throw new Error("Missing POS_BO_XSRF");
-
-    const venue = process.env.POS_FIRMAID || "16973";
-    const url = `https://rest.onlinepos.dk/reports/getBasicSales?target=venue@${venue}&date=${date}`;
-
-    const decodedCookie = POS_BO_COOKIE.replaceAll("%3D", "=").replaceAll(
-      "%2B",
-      "+"
+  const weekNumber =
+    1 +
+    Math.round(
+      (target.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000)
     );
 
-    const r = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Cookie: decodedCookie,
-        "x-xsrf-token": POS_BO_XSRF,
-        "X-Requested-With": "XMLHttpRequest",
-        Origin: "https://bo.onlinepos.dk",
-        Referer: "https://bo.onlinepos.dk/",
-      },
-    });
-
-    if (r.ok) {
-      const json: any = await r.json();
-      const revenue = Number(json?.data?.revenue) || 0;
-
-      return {
-        posToday: revenue,
-        usedDate: date,
-        source: "pos-today-live-backoffice" as const,
-      };
-    }
-  } catch (e) {
-    console.warn("BackOffice live POS failed, using fallback:", e);
-  }
-
-  // 2) Last resort fallback to yesterday
-  const yesterday = addDaysIso(date, -1);
-  const yChunk = await fetchPosRevenueMax2Days(yesterday, yesterday);
-
-  return {
-    posToday: yChunk.total,
-    usedDate: yesterday,
-    source: "pos-yesterday-fallback" as const,
-  };
+  return { weekNumber, weekYear: target.getFullYear() };
 }
 
 kpisRouter.get("/", async (req, res) => {
   try {
-    const date =
-      typeof req.query.date === "string" ? req.query.date : todayIso();
+    const date = parseDateOrThrow(String(req.query.date || ""));
+    const dt = new Date(date + "T00:00:00");
 
-    const cacheKey = `kpis:${date}`;
+    const yyyy = dt.getFullYear();
+    const mm = dt.getMonth() + 1; // 1-12
 
-    // 1) ✅ Serve KPI cached payload
-    const cached = kpiCache.get(cacheKey);
-    if (cached && Date.now() < cached.expiresAtMs) {
-      return res.json({
-        ...cached.payload,
-        meta: {
-          ...(cached.payload?.meta ?? {}),
-          cached: true,
-          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
-          inFlightWait: false,
-        },
+    const { weekNumber, weekYear } = getIsoWeek(date);
+
+    // ✅ TODAY (BackOffice)
+    const todayResp = await getBasicSalesByDate(date);
+    if (!todayResp.ok) {
+      return res.status(todayResp.status).json({
+        error: "POS BackOffice getBasicSales(today) failed",
+        status: todayResp.status,
+        url: todayResp.url,
+        response: todayResp.response,
       });
     }
+    const todayRevenue = Number(todayResp.response?.data?.revenue ?? 0);
 
-    // 2) ✅ Wait if KPI compute already in-flight
-    const existingPromise = inFlightKpi.get(cacheKey);
-    if (existingPromise) {
-      const payload = await existingPromise;
-      return res.json({
-        ...payload,
-        meta: {
-          ...(payload?.meta ?? {}),
-          cached: true,
-          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
-          inFlightWait: true,
-        },
+    // ✅ WEEK (BackOffice)
+    const weekResp = await getBasicSalesByWeek(weekNumber, weekYear);
+    if (!weekResp.ok) {
+      return res.status(weekResp.status).json({
+        error: "POS BackOffice getBasicSales(week) failed",
+        status: weekResp.status,
+        url: weekResp.url,
+        response: weekResp.response,
       });
     }
+    const weekRevenue = Number(weekResp.response?.data?.revenue ?? 0);
 
-    // 3) ✅ Compute once
-    const computePromise = (async () => {
-      const all = await listDailyInputs();
-      const result = computeKpis(all, date);
-
-      const monthStart = startOfMonthIso(date);
-      const yearStart = startOfYearIso(date);
-
-      // ✅ Month + Year POS totals in parallel, with POS-range caching
-      const [monthPos, yearPos] = await Promise.all([
-        fetchPosRevenueAutoRangeCached(monthStart, date),
-        fetchPosRevenueAutoRangeCached(yearStart, date),
-      ]);
-
-      // ✅ Wolt month/year from persisted values (until Wolt integration exists)
-      const woltMonth = all
-        .filter((x) => x.date >= monthStart && x.date <= date)
-        .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
-
-      const woltYear = all
-        .filter((x) => x.date >= yearStart && x.date <= date)
-        .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
-
-      // ✅ POS Today with BackOffice LIVE first
-      const posToday = await getPosTodayWithFallback(date);
-
-      const payload = {
-        ...result,
-        revenue: {
-          ...result.revenue,
-
-          // ✅ Override "today" so dashboard never shows 0 during the day
-          today:
-            typeof posToday.posToday === "number"
-              ? posToday.posToday + (Number(result?.wolt?.today) || 0)
-              : result.revenue.today,
-
-          month: monthPos.total + woltMonth,
-          year: yearPos.total + woltYear,
-        },
-        meta: {
-          posMonthChunks: monthPos.chunks,
-          posYearChunks: yearPos.chunks,
-          cached: false,
-          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
-          inFlightWait: false,
-          posRangeCacheTtlSeconds: POS_RANGE_CACHE_TTL_MS / 1000,
-
-          // ✅ Added: transparency for UI (label later)
-          realPosTodaySource: posToday.source,
-          realPosTodayUsedDate: posToday.usedDate,
-        },
-      };
-
-      kpiCache.set(cacheKey, {
-        expiresAtMs: Date.now() + KPI_CACHE_TTL_MS,
-        payload,
+    // ✅ MONTH (BackOffice)
+    const monthResp = await getBasicSalesByMonth(mm, yyyy);
+    if (!monthResp.ok) {
+      return res.status(monthResp.status).json({
+        error: "POS BackOffice getBasicSales(month) failed",
+        status: monthResp.status,
+        url: monthResp.url,
+        response: monthResp.response,
       });
-
-      return payload;
-    })();
-
-    inFlightKpi.set(cacheKey, computePromise);
-
-    try {
-      const payload = await computePromise;
-      return res.json(payload);
-    } finally {
-      inFlightKpi.delete(cacheKey);
     }
-  } catch (err: any) {
-    console.error("GET /api/kpis error:", err);
-    res.status(500).json({
-      error: err?.message ?? "Failed to compute KPIs",
+    const monthRevenue = Number(monthResp.response?.data?.revenue ?? 0);
+
+    // ✅ YEAR (BackOffice)
+    const yearResp = await getBasicSalesByYear(yyyy);
+    if (!yearResp.ok) {
+      return res.status(yearResp.status).json({
+        error: "POS BackOffice getBasicSales(year) failed",
+        status: yearResp.status,
+        url: yearResp.url,
+        response: yearResp.response,
+      });
+    }
+    const yearRevenue = Number(yearResp.response?.data?.revenue ?? 0);
+
+    return res.json({
+      date,
+      revenue: {
+        today: todayRevenue,
+        week: weekRevenue,
+        month: monthRevenue,
+        year: yearRevenue,
+        lastYearSameDay: 0,
+      },
+      wolt: { today: 0, byDay: [] },
+      labor: { todayCost: 0, laborPctToday: null },
+      cogs: { todayCost: 0, cogsPctToday: null },
+      meta: {
+        cached: false,
+        realPosTodaySource: "pos-today-live-backoffice",
+        realPosTodayUsedDate: date,
+        backofficeWeek: { weekNumber, weekYear },
+      },
     });
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || "Unknown KPI error" });
   }
 });
