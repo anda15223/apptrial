@@ -35,8 +35,9 @@ type KpisResponse = {
   };
 };
 
+// ✅ IMPORTANT: correct default Render URL
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://apptrial.onrender.com";
+  import.meta.env.VITE_API_BASE_URL || "https://apptrial-c8km.onrender.com";
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 }).format(n);
@@ -91,11 +92,13 @@ function StatCard({
   value,
   subtitle,
   deltaValue,
+  loading,
 }: {
   title: string;
-  value: string;
+  value: React.ReactNode;
   subtitle?: string;
   deltaValue?: number | null;
+  loading?: boolean;
 }) {
   const deltaKind =
     typeof deltaValue === "number"
@@ -108,7 +111,10 @@ function StatCard({
     <div className="statCard">
       <div className="statTop">
         <div className="statTitle">{title}</div>
-        {typeof deltaValue === "number" ? (
+
+        {loading ? (
+          <MiniPill kind="neutral" text="Loading…" />
+        ) : typeof deltaValue === "number" ? (
           <MiniPill
             kind={deltaKind}
             text={`${deltaValue >= 0 ? "+" : ""}${fmtMoney(deltaValue)} DKK`}
@@ -131,36 +137,49 @@ function MoneyValue({
   loading: boolean;
   value: number | null | undefined;
 }) {
-  if (loading) return <>—</>;
+  if (loading) return <>Loading…</>;
   if (typeof value !== "number") return <>—</>;
   return <>{fmtMoney(value)} DKK</>;
 }
 
 export default function App() {
-  const [date] = useState(getTodayIso()); // ✅ not editable anymore
+  const [date] = useState(getTodayIso());
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const locationName = "Aarhus (Gaia)";
 
-  async function loadKpis() {
+  async function loadKpis(isRefresh = false) {
     try {
       setError(null);
-      const res = await fetch(`${API_BASE_URL}/api/kpis?date=${date}`);
-      if (!res.ok) throw new Error(`KPIs error: ${res.status}`);
+
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      const url = `${API_BASE_URL}/api/kpis?date=${date}`;
+
+      // ✅ avoid browser cache
+      const res = await fetch(url, { cache: "no-store" });
+
+      if (!res.ok) {
+        throw new Error(`KPIs error: ${res.status}`);
+      }
+
       const data = (await res.json()) as KpisResponse;
       setKpis(data);
     } catch (e: any) {
       setError(e?.message || "Failed to fetch KPIs");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
   useEffect(() => {
-    loadKpis();
-    const t = setInterval(loadKpis, 60_000);
+    loadKpis(false);
+    const t = setInterval(() => loadKpis(true), 60_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
@@ -185,7 +204,6 @@ export default function App() {
     };
   }, [kpis, date]);
 
-  // ✅ placeholder: we do not have last-year week/month/year yet
   const lastYearWeek = 0;
   const lastYearMonth = 0;
   const lastYearYear = 0;
@@ -224,6 +242,7 @@ export default function App() {
             <div className="controlLabel">API</div>
             <div className="apiLine">
               {API_BASE_URL} (auto refresh 60 sec)
+              {refreshing ? " • refreshing…" : ""}
             </div>
           </div>
         </div>
@@ -232,54 +251,44 @@ export default function App() {
       {error ? <div className="errorBox">Error: {error}</div> : null}
       {loading ? <div className="panel">Loading dashboard…</div> : null}
 
-      {/* ✅ Split screen in 2 big areas */}
       <div className="splitLayout">
-        {/* ================== TOP HALF ================== */}
         <div className="splitSection">
           <div className="sectionTitle">Sales + Planday</div>
 
           <div className="topHalfGrid">
-            {/* ✅ 4 sales cards */}
             <div className="salesCardsGrid">
               <StatCard
                 title="Sales Today"
-                value={
-                  <MoneyValue loading={loading} value={kpis?.revenue?.today} /> as any
-                }
+                value={<MoneyValue loading={loading} value={kpis?.revenue?.today} />}
                 subtitle={
-                  derived.liveText ||
-                  derived.fallbackText ||
-                  "POS + Wolt (auto)"
+                  derived.liveText || derived.fallbackText || "POS + Wolt (auto)"
                 }
                 deltaValue={loading ? null : deltaToday}
+                loading={loading}
               />
               <StatCard
                 title="Sales Week"
-                value={
-                  <MoneyValue loading={loading} value={kpis?.revenue?.week} /> as any
-                }
+                value={<MoneyValue loading={loading} value={kpis?.revenue?.week} />}
                 subtitle="Week = Monday → Sunday"
                 deltaValue={loading ? null : deltaWeek}
+                loading={loading}
               />
               <StatCard
                 title="Sales Month"
-                value={
-                  <MoneyValue loading={loading} value={kpis?.revenue?.month} /> as any
-                }
+                value={<MoneyValue loading={loading} value={kpis?.revenue?.month} />}
                 subtitle="Month-to-date (auto POS range)"
                 deltaValue={loading ? null : deltaMonth}
+                loading={loading}
               />
               <StatCard
                 title="Sales Year"
-                value={
-                  <MoneyValue loading={loading} value={kpis?.revenue?.year} /> as any
-                }
+                value={<MoneyValue loading={loading} value={kpis?.revenue?.year} />}
                 subtitle="Year-to-date (auto POS range)"
                 deltaValue={loading ? null : deltaYear}
+                loading={loading}
               />
             </div>
 
-            {/* ✅ Planday big card (placeholder data for now) */}
             <Panel title="Planday (Shifts Today)" subtitle="Integration coming">
               <div className="shiftBox">
                 <div className="shiftLine">
@@ -299,7 +308,7 @@ export default function App() {
                   <div className="shiftTotalRow">
                     <div className="muted">Total Cost Today</div>
                     <div className="bright">
-                      {loading ? "—" : `${fmtMoney(laborCostToday || 0)} DKK`}
+                      {loading ? "Loading…" : `${fmtMoney(laborCostToday || 0)} DKK`}
                     </div>
                   </div>
 
@@ -307,7 +316,7 @@ export default function App() {
                     <div className="muted">Labor % (Today)</div>
                     <div className="bright">
                       {loading
-                        ? "—"
+                        ? "Loading…"
                         : laborPctToday === null
                         ? "—"
                         : `${Math.round(laborPctToday * 100)}%`}
@@ -324,7 +333,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* ================== BOTTOM HALF ================== */}
         <div className="splitSection">
           <div className="sectionTitle">COGS + Delivery Orders</div>
 
@@ -361,7 +369,7 @@ export default function App() {
                 <div className="simpleRow">
                   <div className="muted">Delivery Revenue (Week)</div>
                   <div className="bright">
-                    {loading ? "—" : `${fmtMoney(woltWeekRevenue)} DKK`}
+                    {loading ? "Loading…" : `${fmtMoney(woltWeekRevenue)} DKK`}
                   </div>
                 </div>
               </div>
