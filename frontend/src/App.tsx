@@ -124,6 +124,18 @@ function StatCard({
   );
 }
 
+function MoneyValue({
+  loading,
+  value,
+}: {
+  loading: boolean;
+  value: number | null | undefined;
+}) {
+  if (loading) return <>—</>;
+  if (typeof value !== "number") return <>—</>;
+  return <>{fmtMoney(value)} DKK</>;
+}
+
 export default function App() {
   const [date] = useState(getTodayIso()); // ✅ not editable anymore
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
@@ -153,46 +165,38 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  // ✅ Safe derived values even when kpis is null
   const derived = useMemo(() => {
-    const salesToday = kpis?.revenue?.today ?? 0;
-    const salesWeek = kpis?.revenue?.week ?? 0;
-    const salesMonth = kpis?.revenue?.month ?? 0;
-    const salesYear = kpis?.revenue?.year ?? 0;
-
-    const lastYearSameDay = kpis?.revenue?.lastYearSameDay ?? 0;
-
     const meta = kpis?.meta;
 
     const isFallback =
       meta?.realPosTodaySource === "pos-yesterday-fallback" &&
       Boolean(meta?.realPosTodayUsedDate);
 
+    const isLive =
+      meta?.realPosTodaySource === "pos-today-live-backoffice" &&
+      meta?.realPosTodayUsedDate === date;
+
     return {
-      salesToday,
-      salesWeek,
-      salesMonth,
-      salesYear,
-      lastYearSameDay,
       meta,
       fallbackText: isFallback
         ? `POS not closed → showing ${meta?.realPosTodayUsedDate}`
         : "",
+      liveText: isLive ? "LIVE POS (BackOffice)" : "",
     };
-  }, [kpis]);
+  }, [kpis, date]);
 
   // ✅ placeholder: we do not have last-year week/month/year yet
   const lastYearWeek = 0;
   const lastYearMonth = 0;
   const lastYearYear = 0;
 
-  // ✅ DKK deltas (not percent)
-  const deltaToday = derived.salesToday - derived.lastYearSameDay;
-  const deltaWeek = derived.salesWeek - lastYearWeek;
-  const deltaMonth = derived.salesMonth - lastYearMonth;
-  const deltaYear = derived.salesYear - lastYearYear;
+  const deltaToday =
+    (kpis?.revenue?.today ?? 0) - (kpis?.revenue?.lastYearSameDay ?? 0);
+  const deltaWeek = (kpis?.revenue?.week ?? 0) - lastYearWeek;
+  const deltaMonth = (kpis?.revenue?.month ?? 0) - lastYearMonth;
+  const deltaYear = (kpis?.revenue?.year ?? 0) - lastYearYear;
 
-  const laborCostToday = kpis?.labor?.todayCost ?? 0;
+  const laborCostToday = kpis?.labor?.todayCost;
   const laborPctToday = kpis?.labor?.laborPctToday ?? null;
 
   const woltWeekRevenue = (kpis?.wolt?.byDay ?? []).reduce(
@@ -239,27 +243,39 @@ export default function App() {
             <div className="salesCardsGrid">
               <StatCard
                 title="Sales Today"
-                value={`${fmtMoney(derived.salesToday)} DKK`}
-                subtitle={derived.fallbackText || "Live POS (when day is closed)"}
-                deltaValue={deltaToday}
+                value={
+                  <MoneyValue loading={loading} value={kpis?.revenue?.today} /> as any
+                }
+                subtitle={
+                  derived.liveText ||
+                  derived.fallbackText ||
+                  "POS + Wolt (auto)"
+                }
+                deltaValue={loading ? null : deltaToday}
               />
               <StatCard
                 title="Sales Week"
-                value={`${fmtMoney(derived.salesWeek)} DKK`}
+                value={
+                  <MoneyValue loading={loading} value={kpis?.revenue?.week} /> as any
+                }
                 subtitle="Week = Monday → Sunday"
-                deltaValue={deltaWeek}
+                deltaValue={loading ? null : deltaWeek}
               />
               <StatCard
                 title="Sales Month"
-                value={`${fmtMoney(derived.salesMonth)} DKK`}
+                value={
+                  <MoneyValue loading={loading} value={kpis?.revenue?.month} /> as any
+                }
                 subtitle="Month-to-date (auto POS range)"
-                deltaValue={deltaMonth}
+                deltaValue={loading ? null : deltaMonth}
               />
               <StatCard
                 title="Sales Year"
-                value={`${fmtMoney(derived.salesYear)} DKK`}
+                value={
+                  <MoneyValue loading={loading} value={kpis?.revenue?.year} /> as any
+                }
                 subtitle="Year-to-date (auto POS range)"
-                deltaValue={deltaYear}
+                deltaValue={loading ? null : deltaYear}
               />
             </div>
 
@@ -282,13 +298,17 @@ export default function App() {
                 <div className="shiftTotals">
                   <div className="shiftTotalRow">
                     <div className="muted">Total Cost Today</div>
-                    <div className="bright">{fmtMoney(laborCostToday)} DKK</div>
+                    <div className="bright">
+                      {loading ? "—" : `${fmtMoney(laborCostToday || 0)} DKK`}
+                    </div>
                   </div>
 
                   <div className="shiftTotalRow">
                     <div className="muted">Labor % (Today)</div>
                     <div className="bright">
-                      {laborPctToday === null
+                      {loading
+                        ? "—"
+                        : laborPctToday === null
                         ? "—"
                         : `${Math.round(laborPctToday * 100)}%`}
                     </div>
@@ -340,7 +360,9 @@ export default function App() {
                 </div>
                 <div className="simpleRow">
                   <div className="muted">Delivery Revenue (Week)</div>
-                  <div className="bright">{fmtMoney(woltWeekRevenue)} DKK</div>
+                  <div className="bright">
+                    {loading ? "—" : `${fmtMoney(woltWeekRevenue)} DKK`}
+                  </div>
                 </div>
               </div>
 

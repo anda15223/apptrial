@@ -13,11 +13,11 @@ export const posRouter = express.Router();
  * Routes:
  * ✅ GET /api/pos/revenue?date=YYYY-MM-DD
  * ✅ GET /api/pos/revenue-range?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * ✅ GET /api/pos/today-live?date=YYYY-MM-DD  (BackOffice real live sales)
  *
  * Important:
  * - Koncern endpoint returns ALL firmaids (all locations)
  * - We MUST filter only POS_FIRMAID (your store) to avoid insane totals.
- * - For "today live", we must query from 00:00 to NOW (not 23:59), otherwise POS may return [].
  */
 
 function todayIso(): string {
@@ -107,7 +107,7 @@ async function fetchKoncernRevenue(fromUnix: number, toUnix: number) {
  * Returns revenue for that day (only POS_FIRMAID)
  *
  * NOTE:
- * - If date is today, query 00:00 -> NOW to get "live" revenue.
+ * - If date is today, query 00:00 -> NOW to get "live" revenue (if endpoint supports it).
  * - If date is past day, query 00:00 -> 23:59.
  */
 posRouter.get("/revenue", async (req, res) => {
@@ -162,9 +162,6 @@ posRouter.get("/revenue", async (req, res) => {
 /**
  * ✅ GET /api/pos/revenue-range?from=YYYY-MM-DD&to=YYYY-MM-DD
  * Returns revenue across a date range (only POS_FIRMAID)
- *
- * NOTE:
- * - If toDate is today, we use NOW for the upper bound (so month-to-date is live).
  */
 posRouter.get("/revenue-range", async (req, res) => {
   try {
@@ -189,7 +186,8 @@ posRouter.get("/revenue-range", async (req, res) => {
     const targetFirmaId = Number(firmaid);
 
     const fromUnix = toUnixSeconds(fromDate, false);
-    const toUnix = toDate === todayIso() ? nowUnixSeconds() : toUnixSeconds(toDate, true);
+    const toUnix =
+      toDate === todayIso() ? nowUnixSeconds() : toUnixSeconds(toDate, true);
 
     const { url, data, entries } = await fetchKoncernRevenue(fromUnix, toUnix);
 
@@ -222,5 +220,88 @@ posRouter.get("/revenue-range", async (req, res) => {
     return res
       .status(500)
       .json({ error: err?.message ?? "POS revenue-range crashed" });
+  }
+});
+
+/**
+ * ✅ GET /api/pos/today-live?date=YYYY-MM-DD
+ * Uses POS BackOffice endpoint (rest.onlinepos.dk) which DOES return live revenue.
+ *
+ * IMPORTANT:
+ * This requires session cookie + XSRF token from BackOffice.
+ * (We are temporarily reading these from env vars.)
+ */
+posRouter.get("/today-live", async (req, res) => {
+  try {
+    const date = typeof req.query.date === "string" ? req.query.date : "";
+
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: "date must be YYYY-MM-DD" });
+    }
+
+    const POS_BO_COOKIE = process.env.POS_BO_COOKIE;
+    const POS_BO_XSRF = process.env.POS_BO_XSRF;
+
+    if (!POS_BO_COOKIE) {
+      return res.status(500).json({ error: "Missing POS_BO_COOKIE env var" });
+    }
+    if (!POS_BO_XSRF) {
+      return res.status(500).json({ error: "Missing POS_BO_XSRF env var" });
+    }
+
+    const venue = process.env.POS_FIRMAID || "16973";
+
+    const url = `https://rest.onlinepos.dk/reports/getBasicSales?target=venue@${venue}&date=${date}`;
+
+    const decodedCookie = POS_BO_COOKIE.replaceAll("%3D", "=").replaceAll(
+      "%2B",
+      "+"
+    );
+
+    const r = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Cookie: decodedCookie,
+        "x-xsrf-token": POS_BO_XSRF,
+        "X-Requested-With": "XMLHttpRequest",
+        Origin: "https://bo.onlinepos.dk",
+        Referer: "https://bo.onlinepos.dk/",
+      },
+    });
+
+    const text = await r.text();
+    let json: any = null;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = { raw: text };
+    }
+
+    if (!r.ok) {
+      return res.status(r.status).json({
+        error: "POS BackOffice getBasicSales failed",
+        status: r.status,
+        url,
+        response: json,
+      });
+    }
+
+    const revenue = Number(json?.data?.revenue) || 0;
+    const transactionCount = Number(json?.data?.transaction_count) || 0;
+
+    return res.json({
+      ok: true,
+      date,
+      venue: Number(venue),
+      revenue,
+      transactionCount,
+      raw: json,
+    });
+  } catch (err: any) {
+    console.error("GET /api/pos/today-live error:", err);
+    return res.status(500).json({
+      error: err?.message ?? "POS today-live crashed",
+    });
   }
 });

@@ -32,7 +32,19 @@ function addDaysIso(dateIso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function fetchPosRevenueMax2Days(fromDate: string, toDate: string) {
+type FetchPosOpts = {
+  /**
+   * If provided, overrides the computed "to" unix timestamp.
+   * Used for LIVE "today" (00:00 -> now) rather than end-of-day.
+   */
+  toUnixOverride?: number;
+};
+
+async function fetchPosRevenueMax2Days(
+  fromDate: string,
+  toDate: string,
+  opts?: FetchPosOpts
+) {
   const token = process.env.POS_API_TOKEN;
   const firmaid = process.env.POS_FIRMAID;
 
@@ -42,9 +54,16 @@ async function fetchPosRevenueMax2Days(fromDate: string, toDate: string) {
   const targetFirmaId = Number(firmaid);
 
   const fromUnix = toUnixSeconds(fromDate, false);
-  const toUnix = toUnixSeconds(toDate, true);
+  const computedToUnix = toUnixSeconds(toDate, true);
+  const toUnix =
+    typeof opts?.toUnixOverride === "number"
+      ? opts.toUnixOverride
+      : computedToUnix;
 
-  const url = `https://api.onlinepos.dk/api/koncern/getKoncernRevenue/${fromUnix}/${toUnix}`;
+  // Safety: never allow toUnix earlier than fromUnix
+  const safeToUnix = Math.max(toUnix, fromUnix);
+
+  const url = `https://api.onlinepos.dk/api/koncern/getKoncernRevenue/${fromUnix}/${safeToUnix}`;
 
   const r = await fetch(url, {
     method: "GET",
@@ -209,8 +228,12 @@ async function fetchPosRevenueAutoRangeCached(fromDate: string, toDate: string) 
 
 /**
  * ✅ IMPORTANT:
- * POS API returns empty [] for today until POS closes the day.
- * So we fallback to yesterday to avoid dashboard showing 0.
+ * POS API (api.onlinepos.dk) returns [] for today until POS closes the day.
+ * But POS BackOffice (rest.onlinepos.dk) DOES return live revenue.
+ *
+ * So for TODAY:
+ * 1) Use BackOffice /reports/getBasicSales (cookie + xsrf)
+ * 2) If that fails, fallback to yesterday (last resort)
  */
 async function getPosTodayWithFallback(date: string) {
   const today = todayIso();
@@ -223,17 +246,49 @@ async function getPosTodayWithFallback(date: string) {
     };
   }
 
-  // Try "today"
-  const todayChunk = await fetchPosRevenueMax2Days(date, date);
-  if (todayChunk.total > 0) {
-    return {
-      posToday: todayChunk.total,
-      usedDate: date,
-      source: "pos-today" as const,
-    };
+  // 1) ✅ Live revenue via BackOffice (works during open day)
+  try {
+    const POS_BO_COOKIE = process.env.POS_BO_COOKIE;
+    const POS_BO_XSRF = process.env.POS_BO_XSRF;
+
+    if (!POS_BO_COOKIE) throw new Error("Missing POS_BO_COOKIE");
+    if (!POS_BO_XSRF) throw new Error("Missing POS_BO_XSRF");
+
+    const venue = process.env.POS_FIRMAID || "16973";
+    const url = `https://rest.onlinepos.dk/reports/getBasicSales?target=venue@${venue}&date=${date}`;
+
+    const decodedCookie = POS_BO_COOKIE.replaceAll("%3D", "=").replaceAll(
+      "%2B",
+      "+"
+    );
+
+    const r = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Cookie: decodedCookie,
+        "x-xsrf-token": POS_BO_XSRF,
+        "X-Requested-With": "XMLHttpRequest",
+        Origin: "https://bo.onlinepos.dk",
+        Referer: "https://bo.onlinepos.dk/",
+      },
+    });
+
+    if (r.ok) {
+      const json: any = await r.json();
+      const revenue = Number(json?.data?.revenue) || 0;
+
+      return {
+        posToday: revenue,
+        usedDate: date,
+        source: "pos-today-live-backoffice" as const,
+      };
+    }
+  } catch (e) {
+    console.warn("BackOffice live POS failed, using fallback:", e);
   }
 
-  // Fallback to yesterday
+  // 2) Last resort fallback to yesterday
   const yesterday = addDaysIso(date, -1);
   const yChunk = await fetchPosRevenueMax2Days(yesterday, yesterday);
 
@@ -303,7 +358,7 @@ kpisRouter.get("/", async (req, res) => {
         .filter((x) => x.date >= yearStart && x.date <= date)
         .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
 
-      // ✅ POS Today with fallback to yesterday
+      // ✅ POS Today with BackOffice LIVE first
       const posToday = await getPosTodayWithFallback(date);
 
       const payload = {
