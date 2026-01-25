@@ -4,6 +4,7 @@ import {
   inRange,
   startOfMonthIso,
   startOfWeekIso,
+  endOfWeekIso,
   startOfYearIso,
 } from "../utils/date";
 
@@ -50,6 +51,7 @@ export function computeKpis(all: DailyInput[], dateIso: string): KpiResult {
   const today = all.find((x) => x.date === dateIso);
 
   const weekStart = startOfWeekIso(dateIso);
+  const weekEnd = endOfWeekIso(dateIso); // ✅ Sunday
   const monthStart = startOfMonthIso(dateIso);
   const yearStart = startOfYearIso(dateIso);
 
@@ -66,7 +68,11 @@ export function computeKpis(all: DailyInput[], dateIso: string): KpiResult {
   const lastYearSameDayWolt = Number(lastYearSameDay?.woltRevenue ?? 0);
   const lastYearSameDayRevenue = lastYearSameDayPos + lastYearSameDayWolt;
 
-  const weekRevenue = sumRevenue(all, weekStart, dateIso);
+  // ✅ FULL week: Monday → Sunday
+  const weekRevenue = sumRevenue(all, weekStart, weekEnd);
+
+  // ✅ Month & Year still remain "start → selected date"
+  // (this is typical KPI behavior; tell me if you want full month instead)
   const monthRevenue = sumRevenue(all, monthStart, dateIso);
   const yearRevenue = sumRevenue(all, yearStart, dateIso);
 
