@@ -86,34 +86,66 @@ async function fetchPosRevenueMax2Days(fromDate: string, toDate: string) {
 }
 
 /**
+ * ✅ Run promises with concurrency limit
+ */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+
+  const workers = Array.from({ length: Math.max(1, limit) }, async () => {
+    while (true) {
+      const currentIndex = index;
+      index += 1;
+
+      if (currentIndex >= items.length) return;
+
+      results[currentIndex] = await fn(items[currentIndex]);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
+
+/**
  * POS API only allows max 2-day range.
  * This function automatically sums many requests to cover a long range.
+ *
+ * ✅ Optimized: runs POS requests concurrently (but limited) for speed.
  */
 async function fetchPosRevenueAutoRange(fromDate: string, toDate: string) {
   if (fromDate > toDate) return { total: 0, chunks: 0 };
 
-  let cursor = fromDate;
-  let total = 0;
-  let chunks = 0;
+  // Build all chunk ranges first
+  const ranges: Array<{ from: string; to: string }> = [];
 
-  // Move by 2 days each request (from cursor to cursor+1 day)
+  let cursor = fromDate;
   while (cursor <= toDate) {
     const chunkEnd = addDaysIso(cursor, 1); // 2-day window
     const actualEnd = chunkEnd <= toDate ? chunkEnd : toDate;
 
-    const chunk = await fetchPosRevenueMax2Days(cursor, actualEnd);
-    total += chunk.total;
-    chunks += 1;
-
+    ranges.push({ from: cursor, to: actualEnd });
     cursor = addDaysIso(actualEnd, 1);
   }
 
-  return { total, chunks };
+  // ✅ Concurrency limit (safe for POS + Render)
+  const POS_CONCURRENCY = 3;
+
+  const chunkResults = await mapWithConcurrency(ranges, POS_CONCURRENCY, (r) =>
+    fetchPosRevenueMax2Days(r.from, r.to)
+  );
+
+  const total = chunkResults.reduce((acc, c) => acc + c.total, 0);
+
+  return { total, chunks: ranges.length };
 }
 
 /**
- * ✅ Simple in-memory cache (per server instance)
- * Makes dashboard "live" without waiting 1-3 minutes on every refresh.
+ * ✅ Simple in-memory KPI cache (per server instance)
  */
 type CachedKpi = {
   expiresAtMs: number;
@@ -123,14 +155,63 @@ type CachedKpi = {
 const KPI_CACHE_TTL_MS = 60_000; // 60 seconds
 const kpiCache = new Map<string, CachedKpi>();
 
+/**
+ * ✅ In-flight de-duplication for KPIs (per server instance)
+ */
+const inFlightKpi = new Map<string, Promise<any>>();
+
+/**
+ * ✅ POS range cache to avoid re-fetching month/year ranges repeatedly
+ * Key: posRange:<from>..<to>
+ */
+type CachedPosRange = {
+  expiresAtMs: number;
+  value: { total: number; chunks: number };
+};
+
+const POS_RANGE_CACHE_TTL_MS = 5 * 60_000; // 5 minutes
+const posRangeCache = new Map<string, CachedPosRange>();
+const inFlightPosRange = new Map<string, Promise<{ total: number; chunks: number }>>();
+
+async function fetchPosRevenueAutoRangeCached(fromDate: string, toDate: string) {
+  const key = `posRange:${fromDate}..${toDate}`;
+
+  const cached = posRangeCache.get(key);
+  if (cached && Date.now() < cached.expiresAtMs) {
+    return cached.value;
+  }
+
+  const existing = inFlightPosRange.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const p = (async () => {
+    const value = await fetchPosRevenueAutoRange(fromDate, toDate);
+    posRangeCache.set(key, {
+      expiresAtMs: Date.now() + POS_RANGE_CACHE_TTL_MS,
+      value,
+    });
+    return value;
+  })();
+
+  inFlightPosRange.set(key, p);
+
+  try {
+    return await p;
+  } finally {
+    inFlightPosRange.delete(key);
+  }
+}
+
 kpisRouter.get("/", async (req, res) => {
   try {
     const date = typeof req.query.date === "string" ? req.query.date : todayIso();
 
-    // ✅ Cache key per date
     const cacheKey = `kpis:${date}`;
-    const cached = kpiCache.get(cacheKey);
 
+    // 1) ✅ Serve KPI cached payload
+    const cached = kpiCache.get(cacheKey);
     if (cached && Date.now() < cached.expiresAtMs) {
       return res.json({
         ...cached.payload,
@@ -138,52 +219,82 @@ kpisRouter.get("/", async (req, res) => {
           ...(cached.payload?.meta ?? {}),
           cached: true,
           cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
+          inFlightWait: false,
         },
       });
     }
 
-    // 1) Load persisted values (used for today, labor, cogs, wolt)
-    const all = await listDailyInputs();
-    const result = computeKpis(all, date);
+    // 2) ✅ Wait if KPI compute already in-flight
+    const existingPromise = inFlightKpi.get(cacheKey);
+    if (existingPromise) {
+      const payload = await existingPromise;
+      return res.json({
+        ...payload,
+        meta: {
+          ...(payload?.meta ?? {}),
+          cached: true,
+          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
+          inFlightWait: true,
+        },
+      });
+    }
 
-    // 2) REAL AUTOMATIC POS totals for month + year (no manual import needed)
-    const monthStart = startOfMonthIso(date);
-    const yearStart = startOfYearIso(date);
+    // 3) ✅ Compute once
+    const computePromise = (async () => {
+      const all = await listDailyInputs();
+      const result = computeKpis(all, date);
 
-    const monthPos = await fetchPosRevenueAutoRange(monthStart, date);
-    const yearPos = await fetchPosRevenueAutoRange(yearStart, date);
+      const monthStart = startOfMonthIso(date);
+      const yearStart = startOfYearIso(date);
 
-    // 3) Add Wolt month/year from persisted values (until Wolt integration exists)
-    const woltMonth = all
-      .filter((x) => x.date >= monthStart && x.date <= date)
-      .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
+      // ✅ Month + Year POS totals in parallel, with POS-range caching
+      const [monthPos, yearPos] = await Promise.all([
+        fetchPosRevenueAutoRangeCached(monthStart, date),
+        fetchPosRevenueAutoRangeCached(yearStart, date),
+      ]);
 
-    const woltYear = all
-      .filter((x) => x.date >= yearStart && x.date <= date)
-      .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
+      // Wolt month/year from persisted values (until Wolt integration exists)
+      const woltMonth = all
+        .filter((x) => x.date >= monthStart && x.date <= date)
+        .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
 
-    const payload = {
-      ...result,
-      revenue: {
-        ...result.revenue,
-        month: monthPos.total + woltMonth,
-        year: yearPos.total + woltYear,
-      },
-      meta: {
-        posMonthChunks: monthPos.chunks,
-        posYearChunks: yearPos.chunks,
-        cached: false,
-        cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
-      },
-    };
+      const woltYear = all
+        .filter((x) => x.date >= yearStart && x.date <= date)
+        .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
 
-    // ✅ Save in cache
-    kpiCache.set(cacheKey, {
-      expiresAtMs: Date.now() + KPI_CACHE_TTL_MS,
-      payload,
-    });
+      const payload = {
+        ...result,
+        revenue: {
+          ...result.revenue,
+          month: monthPos.total + woltMonth,
+          year: yearPos.total + woltYear,
+        },
+        meta: {
+          posMonthChunks: monthPos.chunks,
+          posYearChunks: yearPos.chunks,
+          cached: false,
+          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
+          inFlightWait: false,
+          posRangeCacheTtlSeconds: POS_RANGE_CACHE_TTL_MS / 1000,
+        },
+      };
 
-    return res.json(payload);
+      kpiCache.set(cacheKey, {
+        expiresAtMs: Date.now() + KPI_CACHE_TTL_MS,
+        payload,
+      });
+
+      return payload;
+    })();
+
+    inFlightKpi.set(cacheKey, computePromise);
+
+    try {
+      const payload = await computePromise;
+      return res.json(payload);
+    } finally {
+      inFlightKpi.delete(cacheKey);
+    }
   } catch (err: any) {
     console.error("GET /api/kpis error:", err);
     res.status(500).json({
