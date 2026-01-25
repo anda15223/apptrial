@@ -111,9 +111,36 @@ async function fetchPosRevenueAutoRange(fromDate: string, toDate: string) {
   return { total, chunks };
 }
 
+/**
+ * ✅ Simple in-memory cache (per server instance)
+ * Makes dashboard "live" without waiting 1-3 minutes on every refresh.
+ */
+type CachedKpi = {
+  expiresAtMs: number;
+  payload: any;
+};
+
+const KPI_CACHE_TTL_MS = 60_000; // 60 seconds
+const kpiCache = new Map<string, CachedKpi>();
+
 kpisRouter.get("/", async (req, res) => {
   try {
     const date = typeof req.query.date === "string" ? req.query.date : todayIso();
+
+    // ✅ Cache key per date
+    const cacheKey = `kpis:${date}`;
+    const cached = kpiCache.get(cacheKey);
+
+    if (cached && Date.now() < cached.expiresAtMs) {
+      return res.json({
+        ...cached.payload,
+        meta: {
+          ...(cached.payload?.meta ?? {}),
+          cached: true,
+          cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
+        },
+      });
+    }
 
     // 1) Load persisted values (used for today, labor, cogs, wolt)
     const all = await listDailyInputs();
@@ -126,9 +153,7 @@ kpisRouter.get("/", async (req, res) => {
     const monthPos = await fetchPosRevenueAutoRange(monthStart, date);
     const yearPos = await fetchPosRevenueAutoRange(yearStart, date);
 
-    // 3) Replace month/year revenue in result with REAL POS totals (+ Wolt still added)
-    // NOTE: We don’t have Wolt integration yet, so Wolt month/year comes from saved daily_inputs.
-    // We'll keep it consistent by using the same sum logic as engine for Wolt part.
+    // 3) Add Wolt month/year from persisted values (until Wolt integration exists)
     const woltMonth = all
       .filter((x) => x.date >= monthStart && x.date <= date)
       .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
@@ -137,7 +162,7 @@ kpisRouter.get("/", async (req, res) => {
       .filter((x) => x.date >= yearStart && x.date <= date)
       .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
 
-    return res.json({
+    const payload = {
       ...result,
       revenue: {
         ...result.revenue,
@@ -147,8 +172,18 @@ kpisRouter.get("/", async (req, res) => {
       meta: {
         posMonthChunks: monthPos.chunks,
         posYearChunks: yearPos.chunks,
+        cached: false,
+        cacheTtlSeconds: KPI_CACHE_TTL_MS / 1000,
       },
+    };
+
+    // ✅ Save in cache
+    kpiCache.set(cacheKey, {
+      expiresAtMs: Date.now() + KPI_CACHE_TTL_MS,
+      payload,
     });
+
+    return res.json(payload);
   } catch (err: any) {
     console.error("GET /api/kpis error:", err);
     res.status(500).json({

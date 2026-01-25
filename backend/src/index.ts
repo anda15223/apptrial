@@ -25,6 +25,16 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// Version endpoint (to verify production commit)
+app.get("/api/version", (_req, res) => {
+  res.json({
+    ok: true,
+    commitSha: process.env.RENDER_GIT_COMMIT || null,
+    nodeEnv: process.env.NODE_ENV || null,
+    serverTime: new Date().toISOString(),
+  });
+});
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 app.listen(PORT, () => {
