@@ -33,7 +33,41 @@ function getAuthHeaders() {
   };
 }
 
-async function callBasicSales(params: Record<string, string | number>) {
+/**
+ * ✅ OnlinePOS getBasicSales response format
+ */
+export type OnlinePosBasicSalesResponse = {
+  message: string;
+  data: {
+    revenue: number;
+    transaction_count: number;
+    average_transaction_revenue: number;
+    pax_count: number;
+    average_pax_revenue: number;
+    from?: string;
+    to?: string;
+  };
+};
+
+export type OnlinePosCallOk = {
+  ok: true;
+  status: number;
+  url: string;
+  response: OnlinePosBasicSalesResponse;
+};
+
+export type OnlinePosCallFail = {
+  ok: false;
+  status: number;
+  url: string;
+  response: any;
+};
+
+export type OnlinePosCallResult = OnlinePosCallOk | OnlinePosCallFail;
+
+async function callBasicSales(
+  params: Record<string, string | number>
+): Promise<OnlinePosCallResult> {
   const base = "https://rest.onlinepos.dk/reports/getBasicSales";
 
   const url = new URL(base);
@@ -48,11 +82,11 @@ async function callBasicSales(params: Record<string, string | number>) {
     headers: getAuthHeaders() as any,
   });
 
-  const json = await res.json().catch(() => null);
+  const json = (await res.json().catch(() => null)) as any;
 
   if (!res.ok) {
     return {
-      ok: false as const,
+      ok: false,
       status: res.status,
       url: url.toString(),
       response: json,
@@ -60,10 +94,10 @@ async function callBasicSales(params: Record<string, string | number>) {
   }
 
   return {
-    ok: true as const,
+    ok: true,
     status: res.status,
     url: url.toString(),
-    response: json,
+    response: json as OnlinePosBasicSalesResponse,
   };
 }
 
