@@ -1,10 +1,8 @@
 :root {
-  --bg: #0B1A24;
-  --panel: #132B3A;
-
-  /* Make separators more visible */
-  --border: rgba(255, 255, 255, 0.10);
-  --borderStrong: rgba(255, 255, 255, 0.16);
+  --bg: #0b1a24;
+  --panel: #132b3a;
+  --panel2: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.06);
 
   --text: #ffffff;
   --muted: rgba(255, 255, 255, 0.55);
@@ -15,12 +13,6 @@
 
   --red: #ef4444;
   --redBg: rgba(239, 68, 68, 0.18);
-
-  --yellow: #eab308;
-  --yellowBg: rgba(234, 179, 8, 0.18);
-
-  /* Extra: small shadow for quadrant separation */
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
 }
 
 * {
@@ -29,7 +21,8 @@
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -39,13 +32,18 @@ body {
   padding: 22px;
 }
 
-/* Header */
+/* =========================
+   HEADER
+========================= */
+
 .topHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 18px;
   margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brandTitle {
@@ -61,13 +59,13 @@ body {
 }
 
 .brandSubStrong {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 700;
 }
 
 .topControls {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-end;
   flex-wrap: wrap;
 }
@@ -85,49 +83,32 @@ body {
 
 .apiLine {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
 }
 
-/* Inputs + dropdown */
-.input {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--borderStrong);
-  color: var(--text);
-  border-radius: 12px;
-  padding: 10px 12px;
-  outline: none;
-}
+/* =========================
+   ERRORS
+========================= */
 
-.input:focus {
-  border-color: rgba(94, 226, 122, 0.35);
-}
-
-/* Error */
 .errorBox {
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.14);
-  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.12);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
 }
 
-/* Panels (big quadrants + cards) */
+/* =========================
+   PANELS
+========================= */
+
 .panel {
   background: var(--panel);
-  border: 1px solid var(--borderStrong);
-  border-radius: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 18px;
-  box-shadow: var(--shadow);
-}
-
-.panelHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .panelTitle {
@@ -153,98 +134,224 @@ body {
   line-height: 1.35;
 }
 
-/* KPI list rows */
-.kpiList {
+/* =========================
+   SPLIT LAYOUT (2 big halves)
+========================= */
+
+.splitLayout {
   display: flex;
   flex-direction: column;
+  gap: 18px;
 }
 
-.kpiRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+.splitSection {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.015);
 }
 
-.kpiRow:last-child {
-  border-bottom: none;
-}
-
-.kpiLabel {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.kpiRight {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.kpiValue {
-  font-size: 20px;
+.sectionTitle {
+  font-size: 12px;
   font-weight: 800;
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  margin-bottom: 12px;
 }
 
-/* Pills */
-.pill {
+/* Top half: 4 sales cards + 1 big panel */
+.topHalfGrid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .topHalfGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Bottom half: 2 panels */
+.bottomHalfGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .bottomHalfGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   SALES CARDS (4 small quadrants)
+========================= */
+
+.salesCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 700px) {
+  .salesCardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  padding: 16px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.statTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.statTitle {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.statValue {
+  margin-top: 10px;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+}
+
+.smallNote {
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.25;
+}
+
+/* mini pills for +/- DKK */
+.miniPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
-  height: 20px;
-  padding: 0 8px;
+  height: 22px;
+  padding: 0 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-.pillGreen {
+.miniPill-neutral {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.miniPill-green {
   background: var(--greenBg);
   color: var(--green);
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
-.pillRed {
+.miniPill-red {
   background: var(--redBg);
   color: var(--red);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.pillYellow {
-  background: var(--yellowBg);
-  color: var(--yellow);
+/* =========================
+   PLANDAY (placeholder shift list)
+========================= */
+
+.shiftBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.pillNeutral {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.6);
+.shiftLine {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Footer note */
+.shiftName {
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.shiftTime {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.shiftTotals {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shiftTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* =========================
+   SIMPLE LISTS
+========================= */
+
+.simpleList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.simpleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.muted {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.bright {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
 .footerNote {
   margin-top: 16px;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
-}
-
-/* Responsive fix for the 4 top cards and 2 lower cards
-   - 4 across on desktop
-   - 2 across on medium
-   - 1 on mobile */
-@media (max-width: 1200px) {
-  .panelBody > div[style*="gridTemplateColumns: repeat(4"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (max-width: 700px) {
-  .panelBody > div[style*="gridTemplateColumns: repeat(4"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  .panelBody > div[style*="gridTemplateColumns: repeat(2"] {
-    grid-template-columns: 1fr !important;
-  }
 }
