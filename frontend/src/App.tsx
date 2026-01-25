@@ -233,12 +233,6 @@ export default function App() {
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // manual inputs
-  const [totalRevenue, setTotalRevenue] = useState<number>(0);
-  const [woltRevenue, setWoltRevenue] = useState<number>(0);
-  const [laborCost, setLaborCost] = useState<number>(0);
-  const [bcGroceryCost, setBcGroceryCost] = useState<number>(0);
-
   const locationName = "Aarhus (Gaia)";
 
   async function loadKpis() {
@@ -253,58 +247,8 @@ export default function App() {
     }
   }
 
-  async function loadManualInputsForDate(selectedDate: string) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/inputs`);
-      if (!res.ok) throw new Error(`Inputs error: ${res.status}`);
-
-      const rows = (await res.json()) as any[];
-      const row = rows.find((r) => r.date === selectedDate);
-
-      if (!row) {
-        setTotalRevenue(0);
-        setWoltRevenue(0);
-        setLaborCost(0);
-        setBcGroceryCost(0);
-        return;
-      }
-
-      // NOTE: must match API response keys (camelCase)
-      setTotalRevenue(Number(row.totalRevenue ?? 0));
-      setWoltRevenue(Number(row.woltRevenue ?? 0));
-      setLaborCost(Number(row.laborCost ?? 0));
-      setBcGroceryCost(Number(row.bcGroceryCost ?? 0));
-    } catch (e) {
-      console.warn("Failed to load manual inputs:", e);
-    }
-  }
-
-  async function updateToday() {
-    try {
-      setError(null);
-      const res = await fetch(`${API_BASE_URL}/api/inputs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          totalRevenue,
-          woltRevenue,
-          laborCost,
-          bcGroceryCost,
-        }),
-      });
-      if (!res.ok) throw new Error(`Update error: ${res.status}`);
-
-      await loadKpis();
-      await loadManualInputsForDate(date);
-    } catch (e: any) {
-      setError(e?.message || "Update failed");
-    }
-  }
-
   useEffect(() => {
     loadKpis();
-    loadManualInputsForDate(date);
 
     const t = setInterval(loadKpis, 60_000);
     return () => clearInterval(t);
@@ -359,64 +303,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Manual update panel */}
-      <div className="manualPanel">
-        <div className="manualHeader">
-          <div>
-            <div className="panelTitle">Update Today (2 minutes)</div>
-            <div className="panelSubtitle">
-              Manual fallback stays even after APIs
-            </div>
-          </div>
-          <button className="btnPrimary" onClick={updateToday}>
-            Update Today
-          </button>
-        </div>
-
-        <div className="manualGrid">
-          <div className="field">
-            <div className="fieldLabel">Total Revenue (DKK)</div>
-            <input
-              className="input"
-              type="number"
-              value={totalRevenue}
-              onChange={(e) => setTotalRevenue(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="field">
-            <div className="fieldLabel">Wolt Revenue (DKK)</div>
-            <input
-              className="input"
-              type="number"
-              value={woltRevenue}
-              onChange={(e) => setWoltRevenue(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="field">
-            <div className="fieldLabel">Labor Cost (DKK)</div>
-            <input
-              className="input"
-              type="number"
-              value={laborCost}
-              onChange={(e) => setLaborCost(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="field">
-            <div className="fieldLabel">Food Cost (BC Grocery) (DKK)</div>
-            <input
-              className="input"
-              type="number"
-              value={bcGroceryCost}
-              onChange={(e) => setBcGroceryCost(Number(e.target.value))}
-            />
-          </div>
-        </div>
-
-        {error ? <div className="errorBox">Error: {error}</div> : null}
-      </div>
+      {error ? <div className="errorBox">Error: {error}</div> : null}
 
       {/* Main dashboard grid */}
       <div className="grid12">
