@@ -14,24 +14,43 @@ export const posRouter = express.Router();
  * GET /api/pos/revenue?date=YYYY-MM-DD
  *
  * This route returns:
- * - posSalesTotal (sum of all entries revenue)
+ * - posSalesTotal (sum of revenue ONLY for POS_FIRMAID)
  * - raw response from POS
  */
 
 function toUnixSeconds(dateIso: string, endOfDay: boolean): number {
-  const d = new Date(`${dateIso}T00:00:00.000Z`);
+  // IMPORTANT:
+  // Do NOT force UTC by using "Z".
+  // POS Online "daily revenue" is based on local Denmark time.
+  const d = new Date(`${dateIso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return 0;
 
   if (endOfDay) {
-    d.setUTCHours(23, 59, 59, 0);
+    d.setHours(23, 59, 59, 999);
   }
+
   return Math.floor(d.getTime() / 1000);
 }
 
 function parseRevenue(value: any): number {
-  // POS might return revenue as string "14764.2" or number 14764.2
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function safeRawSummary(raw: any) {
+  const isArray = Array.isArray(raw);
+  const rawType = isArray ? "array" : typeof raw;
+
+  const rawKeys =
+    raw && !isArray && typeof raw === "object" ? Object.keys(raw) : [];
+
+  const rawPreview = isArray
+    ? raw.slice(0, 2)
+    : raw && typeof raw === "object"
+    ? Object.fromEntries(Object.entries(raw).slice(0, 5))
+    : raw;
+
+  return { rawType, rawKeys, rawPreview };
 }
 
 posRouter.get("/revenue", async (req, res) => {
@@ -51,6 +70,8 @@ posRouter.get("/revenue", async (req, res) => {
     if (!firmaid) {
       return res.status(500).json({ error: "Missing POS_FIRMAID" });
     }
+
+    const targetFirmaId = Number(firmaid);
 
     const from = toUnixSeconds(date, false);
     const to = toUnixSeconds(date, true);
@@ -78,9 +99,20 @@ posRouter.get("/revenue", async (req, res) => {
 
     const data: any = await r.json();
 
-    const entries = Array.isArray(data?.entries) ? data.entries : [];
+    // POS sometimes returns { entries: [...] } and sometimes [].
+    const entries = Array.isArray(data?.entries)
+      ? data.entries
+      : Array.isArray(data)
+      ? data
+      : [];
 
-    const posSalesTotal = entries.reduce((acc: number, x: any) => {
+    // ✅ FILTER to only this firmaid (your store)
+    const filtered = entries.filter((x: any) => {
+      const fid = Number(x?.entry?.firmaid);
+      return Number.isFinite(fid) && fid === targetFirmaId;
+    });
+
+    const posSalesTotal = filtered.reduce((acc: number, x: any) => {
       const revenue = parseRevenue(x?.entry?.revenue);
       return acc + revenue;
     }, 0);
@@ -92,7 +124,9 @@ posRouter.get("/revenue", async (req, res) => {
       to,
       url,
       posSalesTotal,
-      entriesCount: entries.length,
+      entriesCount: filtered.length,
+      targetFirmaId,
+      rawSummary: safeRawSummary(data),
       raw: data,
     });
   } catch (err: any) {

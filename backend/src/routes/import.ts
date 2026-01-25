@@ -11,16 +11,24 @@ export const importRouter = express.Router();
  *   - date
  *   - totalRevenue = POS posSalesTotal
  *
+ * IMPORTANT:
+ * We MUST filter revenue ONLY for POS_FIRMAID (your store),
+ * otherwise we import the entire koncern revenue (all locations).
+ *
  * Keeps other fields unchanged (woltRevenue, laborCost, bcGroceryCost).
  */
 
 function toUnixSeconds(dateIso: string, endOfDay: boolean): number {
-  const d = new Date(`${dateIso}T00:00:00.000Z`);
+  // IMPORTANT:
+  // Do NOT force UTC by using "Z".
+  // POS Online "daily revenue" is based on local Denmark time.
+  const d = new Date(`${dateIso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return 0;
 
   if (endOfDay) {
-    d.setUTCHours(23, 59, 59, 0);
+    d.setHours(23, 59, 59, 999);
   }
+
   return Math.floor(d.getTime() / 1000);
 }
 
@@ -35,6 +43,8 @@ async function fetchPosSalesTotalForDate(date: string) {
 
   if (!token) throw new Error("Missing POS_API_TOKEN");
   if (!firmaid) throw new Error("Missing POS_FIRMAID");
+
+  const targetFirmaId = Number(firmaid);
 
   const from = toUnixSeconds(date, false);
   const to = toUnixSeconds(date, true);
@@ -56,9 +66,23 @@ async function fetchPosSalesTotalForDate(date: string) {
   }
 
   const data: any = await r.json();
-  const entries = Array.isArray(data?.entries) ? data.entries : [];
 
-  const posSalesTotal = entries.reduce((acc: number, x: any) => {
+  // POS sometimes returns:
+  // - { entries: [...] }
+  // - [] (empty array)
+  const entries = Array.isArray(data?.entries)
+    ? data.entries
+    : Array.isArray(data)
+    ? data
+    : [];
+
+  // ✅ Filter to only this firmaid (your store)
+  const filtered = entries.filter((x: any) => {
+    const fid = Number(x?.entry?.firmaid);
+    return Number.isFinite(fid) && fid === targetFirmaId;
+  });
+
+  const posSalesTotal = filtered.reduce((acc: number, x: any) => {
     const revenue = parseRevenue(x?.entry?.revenue);
     return acc + revenue;
   }, 0);
@@ -69,7 +93,8 @@ async function fetchPosSalesTotalForDate(date: string) {
     to,
     url,
     posSalesTotal,
-    entriesCount: entries.length,
+    entriesCount: filtered.length,
+    targetFirmaId,
     raw: data,
   };
 }
@@ -79,10 +104,12 @@ importRouter.post("/pos", async (req, res) => {
     const date = typeof req.query.date === "string" ? req.query.date : "";
 
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(400).json({ ok: false, error: "date must be YYYY-MM-DD" });
+      return res
+        .status(400)
+        .json({ ok: false, error: "date must be YYYY-MM-DD" });
     }
 
-    // 1) Fetch POS total for date
+    // 1) Fetch POS total for date (filtered to POS_FIRMAID only)
     const pos = await fetchPosSalesTotalForDate(date);
 
     // 2) Get existing daily input so we keep other fields unchanged
@@ -107,6 +134,7 @@ importRouter.post("/pos", async (req, res) => {
       saved,
       posDebug: {
         entriesCount: pos.entriesCount,
+        targetFirmaId: pos.targetFirmaId,
         url: pos.url,
       },
     });
