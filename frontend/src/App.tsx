@@ -30,7 +30,6 @@ type KpisResponse = {
     posYearChunks?: number;
     posRangeCacheTtlSeconds?: number;
 
-    // ✅ New fields from backend
     realPosTodaySource?: string;
     realPosTodayUsedDate?: string | null;
   };
@@ -128,6 +127,7 @@ function StatCard({
 export default function App() {
   const [date] = useState(getTodayIso()); // ✅ not editable anymore
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const locationName = "Aarhus (Gaia)";
@@ -141,29 +141,32 @@ export default function App() {
       setKpis(data);
     } catch (e: any) {
       setError(e?.message || "Failed to fetch KPIs");
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
     loadKpis();
-
     const t = setInterval(loadKpis, 60_000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // ✅ Safe derived values even when kpis is null
   const derived = useMemo(() => {
-    const salesToday = kpis?.revenue.today ?? 0;
-    const salesWeek = kpis?.revenue.week ?? 0;
-    const salesMonth = kpis?.revenue.month ?? 0;
-    const salesYear = kpis?.revenue.year ?? 0;
+    const salesToday = kpis?.revenue?.today ?? 0;
+    const salesWeek = kpis?.revenue?.week ?? 0;
+    const salesMonth = kpis?.revenue?.month ?? 0;
+    const salesYear = kpis?.revenue?.year ?? 0;
 
-    const lastYearSameDay = kpis?.revenue.lastYearSameDay ?? 0;
+    const lastYearSameDay = kpis?.revenue?.lastYearSameDay ?? 0;
 
     const meta = kpis?.meta;
+
     const isFallback =
       meta?.realPosTodaySource === "pos-yesterday-fallback" &&
-      meta?.realPosTodayUsedDate;
+      Boolean(meta?.realPosTodayUsedDate);
 
     return {
       salesToday,
@@ -188,6 +191,14 @@ export default function App() {
   const deltaWeek = derived.salesWeek - lastYearWeek;
   const deltaMonth = derived.salesMonth - lastYearMonth;
   const deltaYear = derived.salesYear - lastYearYear;
+
+  const laborCostToday = kpis?.labor?.todayCost ?? 0;
+  const laborPctToday = kpis?.labor?.laborPctToday ?? null;
+
+  const woltWeekRevenue = (kpis?.wolt?.byDay ?? []).reduce(
+    (acc, x) => acc + (Number(x.revenue) || 0),
+    0
+  );
 
   return (
     <div className="page">
@@ -215,6 +226,7 @@ export default function App() {
       </div>
 
       {error ? <div className="errorBox">Error: {error}</div> : null}
+      {loading ? <div className="panel">Loading dashboard…</div> : null}
 
       {/* ✅ Split screen in 2 big areas */}
       <div className="splitLayout">
@@ -270,18 +282,18 @@ export default function App() {
                 <div className="shiftTotals">
                   <div className="shiftTotalRow">
                     <div className="muted">Total Cost Today</div>
-                    <div className="bright">
-                      {fmtMoney(kpis?.labor.todayCost ?? 0)} DKK
-                    </div>
+                    <div className="bright">{fmtMoney(laborCostToday)} DKK</div>
                   </div>
+
                   <div className="shiftTotalRow">
                     <div className="muted">Labor % (Today)</div>
                     <div className="bright">
-                      {kpis?.labor.laborPctToday === null
+                      {laborPctToday === null
                         ? "—"
-                        : `${Math.round(kpis.labor.laborPctToday * 100)}%`}
+                        : `${Math.round(laborPctToday * 100)}%`}
                     </div>
                   </div>
+
                   <div className="shiftTotalRow">
                     <div className="muted">Labor % vs Last Year Same Day</div>
                     <div className="bright">Coming soon</div>
@@ -328,15 +340,7 @@ export default function App() {
                 </div>
                 <div className="simpleRow">
                   <div className="muted">Delivery Revenue (Week)</div>
-                  <div className="bright">
-                    {fmtMoney(
-                      (kpis?.wolt?.byDay ?? []).reduce(
-                        (acc, x) => acc + (Number(x.revenue) || 0),
-                        0
-                      )
-                    )}{" "}
-                    DKK
-                  </div>
+                  <div className="bright">{fmtMoney(woltWeekRevenue)} DKK</div>
                 </div>
               </div>
 
