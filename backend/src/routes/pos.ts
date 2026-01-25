@@ -17,8 +17,12 @@ export const posRouter = express.Router();
  * Important:
  * - Koncern endpoint returns ALL firmaids (all locations)
  * - We MUST filter only POS_FIRMAID (your store) to avoid insane totals.
- * - "Today" can return empty [] until POS closes the day.
+ * - For "today live", we must query from 00:00 to NOW (not 23:59), otherwise POS may return [].
  */
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function toUnixSeconds(dateIso: string, endOfDay: boolean): number {
   // IMPORTANT:
@@ -32,6 +36,10 @@ function toUnixSeconds(dateIso: string, endOfDay: boolean): number {
   }
 
   return Math.floor(d.getTime() / 1000);
+}
+
+function nowUnixSeconds(): number {
+  return Math.floor(Date.now() / 1000);
 }
 
 function parseRevenue(value: any): number {
@@ -97,6 +105,10 @@ async function fetchKoncernRevenue(fromUnix: number, toUnix: number) {
 /**
  * ✅ GET /api/pos/revenue?date=YYYY-MM-DD
  * Returns revenue for that day (only POS_FIRMAID)
+ *
+ * NOTE:
+ * - If date is today, query 00:00 -> NOW to get "live" revenue.
+ * - If date is past day, query 00:00 -> 23:59.
  */
 posRouter.get("/revenue", async (req, res) => {
   try {
@@ -113,7 +125,7 @@ posRouter.get("/revenue", async (req, res) => {
     const targetFirmaId = Number(firmaid);
 
     const from = toUnixSeconds(date, false);
-    const to = toUnixSeconds(date, true);
+    const to = date === todayIso() ? nowUnixSeconds() : toUnixSeconds(date, true);
 
     const { url, data, entries } = await fetchKoncernRevenue(from, to);
 
@@ -137,6 +149,7 @@ posRouter.get("/revenue", async (req, res) => {
       posSalesTotal,
       entriesCount: filtered.length,
       targetFirmaId,
+      liveToNow: date === todayIso(),
       rawSummary: safeRawSummary(data),
       raw: data,
     });
@@ -150,9 +163,8 @@ posRouter.get("/revenue", async (req, res) => {
  * ✅ GET /api/pos/revenue-range?from=YYYY-MM-DD&to=YYYY-MM-DD
  * Returns revenue across a date range (only POS_FIRMAID)
  *
- * This is what we will use to calculate:
- * - Month revenue
- * - Year revenue
+ * NOTE:
+ * - If toDate is today, we use NOW for the upper bound (so month-to-date is live).
  */
 posRouter.get("/revenue-range", async (req, res) => {
   try {
@@ -177,7 +189,7 @@ posRouter.get("/revenue-range", async (req, res) => {
     const targetFirmaId = Number(firmaid);
 
     const fromUnix = toUnixSeconds(fromDate, false);
-    const toUnix = toUnixSeconds(toDate, true);
+    const toUnix = toDate === todayIso() ? nowUnixSeconds() : toUnixSeconds(toDate, true);
 
     const { url, data, entries } = await fetchKoncernRevenue(fromUnix, toUnix);
 
@@ -202,6 +214,7 @@ posRouter.get("/revenue-range", async (req, res) => {
       posSalesTotal,
       entriesCount: filtered.length,
       targetFirmaId,
+      liveToNow: toDate === todayIso(),
       rawSummary: safeRawSummary(data),
     });
   } catch (err: any) {
