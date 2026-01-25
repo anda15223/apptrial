@@ -208,36 +208,46 @@ async function fetchPosRevenueAutoRangeCached(fromDate: string, toDate: string) 
 }
 
 /**
- * ✅ NEW: Get real POS "today" revenue, fallback to yesterday if POS not closed
+ * ✅ IMPORTANT:
+ * POS API returns empty [] for today until POS closes the day.
+ * So we fallback to yesterday to avoid dashboard showing 0.
  */
-async function getRealPosTodayWithFallback(date: string) {
+async function getPosTodayWithFallback(date: string) {
   const today = todayIso();
 
-  // Only apply fallback logic when user requests the real "today"
   if (date !== today) {
-    return { posToday: null as number | null, source: "not-today" as const };
+    return {
+      posToday: null as number | null,
+      usedDate: null as string | null,
+      source: "not-today" as const,
+    };
   }
 
-  // Try today
+  // Try "today"
   const todayChunk = await fetchPosRevenueMax2Days(date, date);
-
   if (todayChunk.total > 0) {
-    return { posToday: todayChunk.total, source: "pos-today" as const };
+    return {
+      posToday: todayChunk.total,
+      usedDate: date,
+      source: "pos-today" as const,
+    };
   }
 
-  // Fallback to yesterday if POS day is not closed yet
+  // Fallback to yesterday
   const yesterday = addDaysIso(date, -1);
   const yChunk = await fetchPosRevenueMax2Days(yesterday, yesterday);
 
   return {
     posToday: yChunk.total,
+    usedDate: yesterday,
     source: "pos-yesterday-fallback" as const,
   };
 }
 
 kpisRouter.get("/", async (req, res) => {
   try {
-    const date = typeof req.query.date === "string" ? req.query.date : todayIso();
+    const date =
+      typeof req.query.date === "string" ? req.query.date : todayIso();
 
     const cacheKey = `kpis:${date}`;
 
@@ -284,7 +294,7 @@ kpisRouter.get("/", async (req, res) => {
         fetchPosRevenueAutoRangeCached(yearStart, date),
       ]);
 
-      // Wolt month/year from persisted values (until Wolt integration exists)
+      // ✅ Wolt month/year from persisted values (until Wolt integration exists)
       const woltMonth = all
         .filter((x) => x.date >= monthStart && x.date <= date)
         .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
@@ -293,19 +303,18 @@ kpisRouter.get("/", async (req, res) => {
         .filter((x) => x.date >= yearStart && x.date <= date)
         .reduce((acc, x) => acc + (Number(x.woltRevenue) || 0), 0);
 
-      // ✅ NEW: real POS today (with fallback to yesterday when not closed)
-      const realPosToday = await getRealPosTodayWithFallback(date);
+      // ✅ POS Today with fallback to yesterday
+      const posToday = await getPosTodayWithFallback(date);
 
       const payload = {
         ...result,
         revenue: {
           ...result.revenue,
 
-          // ✅ Override today with real POS today (or fallback to yesterday),
-          // and keep Wolt "today" added as part of engine logic (still 0 for now)
+          // ✅ Override "today" so dashboard never shows 0 during the day
           today:
-            typeof realPosToday.posToday === "number"
-              ? realPosToday.posToday + (Number(result?.wolt?.today) || 0)
+            typeof posToday.posToday === "number"
+              ? posToday.posToday + (Number(result?.wolt?.today) || 0)
               : result.revenue.today,
 
           month: monthPos.total + woltMonth,
@@ -319,8 +328,9 @@ kpisRouter.get("/", async (req, res) => {
           inFlightWait: false,
           posRangeCacheTtlSeconds: POS_RANGE_CACHE_TTL_MS / 1000,
 
-          // ✅ Added: shows if we used today or yesterday fallback
-          realPosTodaySource: realPosToday.source,
+          // ✅ Added: transparency for UI (label later)
+          realPosTodaySource: posToday.source,
+          realPosTodayUsedDate: posToday.usedDate,
         },
       };
 
