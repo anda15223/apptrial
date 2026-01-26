@@ -6,36 +6,59 @@ type KpisResponse = {
   revenue: {
     today: number;
     week: number;
+    weekToDate: number;
+
     month: number;
+    monthToDate: number;
+
     year: number;
+
     lastYearSameDay: number;
+
+    // ✅ NEW (from backend)
+    lastYearWeek: number;
+    lastYearMonth: number;
+    lastYearYear: number;
   };
-  wolt: {
-    today: number;
-    byDay: { date: string; revenue: number }[];
+
+  comparisons: {
+    todayVsLastYearSameDay: {
+      current: number;
+      lastYear: number;
+      diff: number;
+      direction: "up" | "down" | "flat";
+    };
+
+    // ✅ NEW (from backend)
+    weekVsLastYearWeek: {
+      current: number;
+      lastYear: number;
+      diff: number;
+      direction: "up" | "down" | "flat";
+    };
+
+    monthVsLastYearMonth: {
+      current: number;
+      lastYear: number;
+      diff: number;
+      direction: "up" | "down" | "flat";
+    };
+
+    yearVsLastYearYear: {
+      current: number;
+      lastYear: number;
+      diff: number;
+      direction: "up" | "down" | "flat";
+    };
   };
-  labor: {
-    todayCost: number;
-    laborPctToday: number | null;
-  };
-  cogs: {
-    todayCost: number;
-    cogsPctToday: number | null;
-  };
+
   meta?: {
     cached?: boolean;
-    cacheTtlSeconds?: number;
-    inFlightWait?: boolean;
-    posMonthChunks?: number;
-    posYearChunks?: number;
-    posRangeCacheTtlSeconds?: number;
-
-    realPosTodaySource?: string;
-    realPosTodayUsedDate?: string | null;
+    cacheAgeSeconds?: number;
+    source?: "live" | "cache";
   };
 };
 
-// ✅ IMPORTANT: correct default Render URL
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://apptrial-c8km.onrender.com";
 
@@ -92,20 +115,35 @@ function StatCard({
   value,
   subtitle,
   deltaValue,
+  deltaKindOverride,
+  deltaTextOverride,
   loading,
 }: {
   title: string;
   value: React.ReactNode;
   subtitle?: string;
   deltaValue?: number | null;
+  deltaKindOverride?: "green" | "red" | "neutral";
+  deltaTextOverride?: string;
   loading?: boolean;
 }) {
-  const deltaKind =
+  const autoDeltaKind: "green" | "red" | "neutral" =
     typeof deltaValue === "number"
-      ? deltaValue >= 0
+      ? deltaValue > 0
         ? "green"
-        : "red"
+        : deltaValue < 0
+        ? "red"
+        : "neutral"
       : "neutral";
+
+  const deltaKind = deltaKindOverride ?? autoDeltaKind;
+
+  const defaultDeltaText =
+    typeof deltaValue === "number"
+      ? `${deltaValue >= 0 ? "+" : ""}${fmtMoney(deltaValue)} DKK`
+      : "—";
+
+  const deltaText = deltaTextOverride ?? defaultDeltaText;
 
   return (
     <div className="statCard">
@@ -115,10 +153,7 @@ function StatCard({
         {loading ? (
           <MiniPill kind="neutral" text="Loading…" />
         ) : typeof deltaValue === "number" ? (
-          <MiniPill
-            kind={deltaKind}
-            text={`${deltaValue >= 0 ? "+" : ""}${fmtMoney(deltaValue)} DKK`}
-          />
+          <MiniPill kind={deltaKind} text={deltaText} />
         ) : (
           <MiniPill kind="neutral" text="—" />
         )}
@@ -142,6 +177,12 @@ function MoneyValue({
   return <>{fmtMoney(value)} DKK</>;
 }
 
+function directionToKind(direction?: "up" | "down" | "flat") {
+  if (direction === "up") return "green";
+  if (direction === "down") return "red";
+  return "neutral";
+}
+
 export default function App() {
   const [date] = useState(getTodayIso());
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
@@ -159,13 +200,9 @@ export default function App() {
       else setLoading(true);
 
       const url = `${API_BASE_URL}/api/kpis?date=${date}`;
-
-      // ✅ avoid browser cache
       const res = await fetch(url, { cache: "no-store" });
 
-      if (!res.ok) {
-        throw new Error(`KPIs error: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`KPIs error: ${res.status}`);
 
       const data = (await res.json()) as KpisResponse;
       setKpis(data);
@@ -184,43 +221,33 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // ✅ TODAY block
+  const today = kpis?.revenue?.today ?? 0;
+  const lastYearSameDay = kpis?.revenue?.lastYearSameDay ?? 0;
+  const todayDiffObj = kpis?.comparisons?.todayVsLastYearSameDay;
+
+  // ✅ WEEK block
+  const week = kpis?.revenue?.week ?? 0;
+  const lastYearWeek = kpis?.revenue?.lastYearWeek ?? 0;
+  const weekDiffObj = kpis?.comparisons?.weekVsLastYearWeek;
+
+  // ✅ MONTH block
+  const month = kpis?.revenue?.month ?? 0;
+  const lastYearMonth = kpis?.revenue?.lastYearMonth ?? 0;
+  const monthDiffObj = kpis?.comparisons?.monthVsLastYearMonth;
+
+  // ✅ YEAR block
+  const year = kpis?.revenue?.year ?? 0;
+  const lastYearYear = kpis?.revenue?.lastYearYear ?? 0;
+  const yearDiffObj = kpis?.comparisons?.yearVsLastYearYear;
+
+  // Header meta display
   const derived = useMemo(() => {
     const meta = kpis?.meta;
-
-    const isFallback =
-      meta?.realPosTodaySource === "pos-yesterday-fallback" &&
-      Boolean(meta?.realPosTodayUsedDate);
-
-    const isLive =
-      meta?.realPosTodaySource === "pos-today-live-backoffice" &&
-      meta?.realPosTodayUsedDate === date;
-
     return {
-      meta,
-      fallbackText: isFallback
-        ? `POS not closed → showing ${meta?.realPosTodayUsedDate}`
-        : "",
-      liveText: isLive ? "LIVE POS (BackOffice)" : "",
+      cachedText: meta?.cached ? `cached (${meta?.cacheAgeSeconds}s)` : "live",
     };
-  }, [kpis, date]);
-
-  const lastYearWeek = 0;
-  const lastYearMonth = 0;
-  const lastYearYear = 0;
-
-  const deltaToday =
-    (kpis?.revenue?.today ?? 0) - (kpis?.revenue?.lastYearSameDay ?? 0);
-  const deltaWeek = (kpis?.revenue?.week ?? 0) - lastYearWeek;
-  const deltaMonth = (kpis?.revenue?.month ?? 0) - lastYearMonth;
-  const deltaYear = (kpis?.revenue?.year ?? 0) - lastYearYear;
-
-  const laborCostToday = kpis?.labor?.todayCost;
-  const laborPctToday = kpis?.labor?.laborPctToday ?? null;
-
-  const woltWeekRevenue = (kpis?.wolt?.byDay ?? []).reduce(
-    (acc, x) => acc + (Number(x.revenue) || 0),
-    0
-  );
+  }, [kpis]);
 
   return (
     <div className="page">
@@ -241,7 +268,7 @@ export default function App() {
           <div className="controlBlock">
             <div className="controlLabel">API</div>
             <div className="apiLine">
-              {API_BASE_URL} (auto refresh 60 sec)
+              {API_BASE_URL} (refresh 60 sec • {derived.cachedText})
               {refreshing ? " • refreshing…" : ""}
             </div>
           </div>
@@ -257,125 +284,104 @@ export default function App() {
 
           <div className="topHalfGrid">
             <div className="salesCardsGrid">
+              {/* ✅ Sales Today */}
               <StatCard
                 title="Sales Today"
                 value={<MoneyValue loading={loading} value={kpis?.revenue?.today} />}
-                subtitle={
-                  derived.liveText || derived.fallbackText || "POS + Wolt (auto)"
+                subtitle={`Same day last year: ${fmtMoney(lastYearSameDay)} DKK`}
+                deltaValue={loading ? null : todayDiffObj?.diff ?? today - lastYearSameDay}
+                deltaKindOverride={
+                  loading ? "neutral" : directionToKind(todayDiffObj?.direction)
                 }
-                deltaValue={loading ? null : deltaToday}
+                deltaTextOverride={
+                  loading
+                    ? "Loading…"
+                    : `Diff: ${todayDiffObj?.diff && todayDiffObj.diff >= 0 ? "+" : ""}${fmtMoney(
+                        todayDiffObj?.diff ?? today - lastYearSameDay
+                      )} DKK`
+                }
                 loading={loading}
               />
+
+              {/* ✅ Sales Week */}
               <StatCard
                 title="Sales Week"
-                value={<MoneyValue loading={loading} value={kpis?.revenue?.week} />}
-                subtitle="Week = Monday → Sunday"
-                deltaValue={loading ? null : deltaWeek}
+                value={<MoneyValue loading={loading} value={week} />}
+                subtitle={`Same week last year: ${fmtMoney(lastYearWeek)} DKK`}
+                deltaValue={loading ? null : weekDiffObj?.diff ?? week - lastYearWeek}
+                deltaKindOverride={
+                  loading ? "neutral" : directionToKind(weekDiffObj?.direction)
+                }
+                deltaTextOverride={
+                  loading
+                    ? "Loading…"
+                    : `Diff: ${weekDiffObj?.diff && weekDiffObj.diff >= 0 ? "+" : ""}${fmtMoney(
+                        weekDiffObj?.diff ?? week - lastYearWeek
+                      )} DKK`
+                }
                 loading={loading}
               />
+
+              {/* ✅ Sales Month */}
               <StatCard
                 title="Sales Month"
-                value={<MoneyValue loading={loading} value={kpis?.revenue?.month} />}
-                subtitle="Month-to-date (auto POS range)"
-                deltaValue={loading ? null : deltaMonth}
+                value={<MoneyValue loading={loading} value={month} />}
+                subtitle={`Same month last year: ${fmtMoney(lastYearMonth)} DKK`}
+                deltaValue={loading ? null : monthDiffObj?.diff ?? month - lastYearMonth}
+                deltaKindOverride={
+                  loading ? "neutral" : directionToKind(monthDiffObj?.direction)
+                }
+                deltaTextOverride={
+                  loading
+                    ? "Loading…"
+                    : `Diff: ${monthDiffObj?.diff && monthDiffObj.diff >= 0 ? "+" : ""}${fmtMoney(
+                        monthDiffObj?.diff ?? month - lastYearMonth
+                      )} DKK`
+                }
                 loading={loading}
               />
+
+              {/* ✅ Sales Year */}
               <StatCard
                 title="Sales Year"
-                value={<MoneyValue loading={loading} value={kpis?.revenue?.year} />}
-                subtitle="Year-to-date (auto POS range)"
-                deltaValue={loading ? null : deltaYear}
+                value={<MoneyValue loading={loading} value={year} />}
+                subtitle={`Same year last year: ${fmtMoney(lastYearYear)} DKK`}
+                deltaValue={loading ? null : yearDiffObj?.diff ?? year - lastYearYear}
+                deltaKindOverride={
+                  loading ? "neutral" : directionToKind(yearDiffObj?.direction)
+                }
+                deltaTextOverride={
+                  loading
+                    ? "Loading…"
+                    : `Diff: ${yearDiffObj?.diff && yearDiffObj.diff >= 0 ? "+" : ""}${fmtMoney(
+                        yearDiffObj?.diff ?? year - lastYearYear
+                      )} DKK`
+                }
                 loading={loading}
               />
             </div>
 
             <Panel title="Planday (Shifts Today)" subtitle="Integration coming">
-              <div className="shiftBox">
-                <div className="shiftLine">
-                  <div className="shiftName">Alex</div>
-                  <div className="shiftTime">10:00 - 18:00</div>
-                </div>
-                <div className="shiftLine">
-                  <div className="shiftName">Marius</div>
-                  <div className="shiftTime">12:00 - 20:00</div>
-                </div>
-                <div className="shiftLine">
-                  <div className="shiftName">Andrei</div>
-                  <div className="shiftTime">14:00 - 22:00</div>
-                </div>
-
-                <div className="shiftTotals">
-                  <div className="shiftTotalRow">
-                    <div className="muted">Total Cost Today</div>
-                    <div className="bright">
-                      {loading ? "Loading…" : `${fmtMoney(laborCostToday || 0)} DKK`}
-                    </div>
-                  </div>
-
-                  <div className="shiftTotalRow">
-                    <div className="muted">Labor % (Today)</div>
-                    <div className="bright">
-                      {loading
-                        ? "Loading…"
-                        : laborPctToday === null
-                        ? "—"
-                        : `${Math.round(laborPctToday * 100)}%`}
-                    </div>
-                  </div>
-
-                  <div className="shiftTotalRow">
-                    <div className="muted">Labor % vs Last Year Same Day</div>
-                    <div className="bright">Coming soon</div>
-                  </div>
-                </div>
+              <div className="panelNote">
+                Next step: connect Planday API and show real shifts.
               </div>
             </Panel>
           </div>
         </div>
 
         <div className="splitSection">
-          <div className="sectionTitle">COGS + Delivery Orders</div>
+          <div className="sectionTitle">Next modules</div>
 
           <div className="bottomHalfGrid">
-            <Panel
-              title="COGS (BC Catering + Inco)"
-              subtitle="Integration coming (week totals)"
-            >
-              <div className="simpleList">
-                <div className="simpleRow">
-                  <div className="muted">BC + Inco Orders (Week)</div>
-                  <div className="bright">Coming soon</div>
-                </div>
-                <div className="simpleRow">
-                  <div className="muted">Cost of Goods (Week)</div>
-                  <div className="bright">Coming soon</div>
-                </div>
-                <div className="simpleRow">
-                  <div className="muted">COGS % of Week Sales</div>
-                  <div className="bright">Coming soon</div>
-                </div>
+            <Panel title="COGS (BC Catering + Inco)" subtitle="Integration coming">
+              <div className="panelNote">
+                Next step: connect your invoices + calculate COGS % of sales.
               </div>
             </Panel>
 
-            <Panel
-              title="Delivery Orders (Wolt)"
-              subtitle="Integration coming (daily + weekly total)"
-            >
-              <div className="simpleList">
-                <div className="simpleRow">
-                  <div className="muted">Delivery Orders (Week)</div>
-                  <div className="bright">Coming soon</div>
-                </div>
-                <div className="simpleRow">
-                  <div className="muted">Delivery Revenue (Week)</div>
-                  <div className="bright">
-                    {loading ? "Loading…" : `${fmtMoney(woltWeekRevenue)} DKK`}
-                  </div>
-                </div>
-              </div>
-
+            <Panel title="Delivery Orders (Wolt)" subtitle="Integration coming">
               <div className="panelNote">
-                Wolt integration will replace saved placeholder values.
+                Next step: connect Wolt revenue to compare vs POS revenue.
               </div>
             </Panel>
           </div>
@@ -383,8 +389,7 @@ export default function App() {
       </div>
 
       <div className="footerNote">
-        Next upgrades: location dropdown, last year week/month/year comparisons,
-        Planday real shifts, BC/Inco real invoices.
+        Next upgrades: location dropdown, week/month/year KPI labels, real Planday shifts.
       </div>
     </div>
   );

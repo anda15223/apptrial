@@ -1,7 +1,6 @@
 :root {
   --bg: #0b1a24;
   --panel: #132b3a;
-  --panel2: rgba(255, 255, 255, 0.03);
   --border: rgba(255, 255, 255, 0.06);
 
   --text: #ffffff;
@@ -27,9 +26,15 @@ body {
   color: var(--text);
 }
 
+/* =========================
+   PAGE
+========================= */
+
 .page {
   min-height: 100vh;
-  padding: 22px;
+  padding: 26px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* =========================
@@ -47,25 +52,25 @@ body {
 }
 
 .brandTitle {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
 }
 
 .brandSub {
-  margin-top: 6px;
-  font-size: 12px;
+  margin-top: 8px;
+  font-size: 14px;
   color: var(--muted);
 }
 
 .brandSubStrong {
   color: rgba(255, 255, 255, 0.9);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .topControls {
   display: flex;
-  gap: 14px;
+  gap: 18px;
   align-items: flex-end;
   flex-wrap: wrap;
 }
@@ -77,13 +82,13 @@ body {
 }
 
 .controlLabel {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted2);
 }
 
 .apiLine {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 /* =========================
@@ -91,13 +96,13 @@ body {
 ========================= */
 
 .errorBox {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
   border: 1px solid rgba(239, 68, 68, 0.25);
   background: rgba(239, 68, 68, 0.12);
   color: rgba(255, 255, 255, 0.9);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* =========================
@@ -107,19 +112,19 @@ body {
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px;
+  border-radius: 18px;
+  padding: 20px;
 }
 
 .panelTitle {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .panelSubtitle {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 5px;
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -129,13 +134,13 @@ body {
 
 .panelNote {
   margin-top: 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.35;
 }
 
 /* =========================
-   SPLIT LAYOUT (2 big halves)
+   SECTIONS
 ========================= */
 
 .splitLayout {
@@ -146,25 +151,28 @@ body {
 
 .splitSection {
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 18px;
-  padding: 16px;
+  border-radius: 20px;
+  padding: 18px;
   background: rgba(255, 255, 255, 0.015);
 }
 
 .sectionTitle {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 900;
   color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
-  letter-spacing: 0.9px;
-  margin-bottom: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
 }
 
-/* Top half: 4 sales cards + 1 big panel */
+/* =========================
+   GRIDS
+========================= */
+
 .topHalfGrid {
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
-  gap: 16px;
+  grid-template-columns: 1.35fr 0.65fr;
+  gap: 18px;
 }
 
 @media (max-width: 1100px) {
@@ -173,11 +181,10 @@ body {
   }
 }
 
-/* Bottom half: 2 panels */
 .bottomHalfGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 18px;
 }
 
 @media (max-width: 900px) {
@@ -186,28 +193,23 @@ body {
   }
 }
 
-/* =========================
-   SALES CARDS (4 small quadrants)
-========================= */
-
 .salesCardsGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
 }
 
-@media (max-width: 700px) {
-  .salesCardsGrid {
-    grid-template-columns: 1fr;
-  }
-}
+/* =========================
+   KPI CARD
+========================= */
 
 .statCard {
   background: var(--panel);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 16px;
-  padding: 16px;
-  min-height: 120px;
+  border-radius: 18px;
+  padding: 22px;
+  min-height: 160px;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -216,42 +218,49 @@ body {
 .statTop {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
+/* Title bigger */
 .statTitle {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
 }
 
+/* main number */
 .statValue {
-  margin-top: 10px;
-  font-size: 30px;
-  font-weight: 900;
+  margin-top: 12px;
+  font-size: 38px;
+  font-weight: 950;
   letter-spacing: 0.3px;
 }
 
+/* ✅ Same size/weight as the diff pill text */
 .smallNote {
-  margin-top: 10px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.25;
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.3;
 }
 
-/* mini pills for +/- DKK */
+/* Diff pill */
 .miniPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
-  padding: 0 10px;
+
+  height: 30px;
+  padding: 0 14px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+
+  font-size: 15px;
+  font-weight: 900;
+
   border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
@@ -273,42 +282,43 @@ body {
 }
 
 /* =========================
-   PLANDAY (placeholder shift list)
+   SHIFTS (placeholder)
 ========================= */
 
 .shiftBox {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .shiftLine {
   display: flex;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .shiftName {
-  font-weight: 800;
+  font-weight: 900;
   color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
 }
 
 .shiftTime {
-  color: rgba(255, 255, 255, 0.65);
-  font-weight: 600;
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .shiftTotals {
-  margin-top: 8px;
-  padding-top: 10px;
+  margin-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .shiftTotalRow {
@@ -318,21 +328,21 @@ body {
 }
 
 /* =========================
-   SIMPLE LISTS
+   SIMPLE LIST
 ========================= */
 
 .simpleList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .simpleRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -343,7 +353,7 @@ body {
 
 .bright {
   color: rgba(255, 255, 255, 0.92);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 /* =========================
@@ -351,7 +361,54 @@ body {
 ========================= */
 
 .footerNote {
-  margin-top: 16px;
-  font-size: 12px;
+  margin-top: 18px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.45);
+}
+
+/* =========================
+   PHONE: one box per row
+========================= */
+
+@media (max-width: 700px) {
+  .page {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .brandTitle {
+    font-size: 20px;
+  }
+
+  .salesCardsGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .statCard {
+    min-height: 170px;
+    padding: 18px;
+  }
+
+  .statValue {
+    font-size: 36px;
+  }
+
+  .smallNote {
+    font-size: 15px;
+  }
+
+  .miniPill {
+    height: 32px;
+    font-size: 14px;
+    padding: 0 14px;
+  }
+
+  .splitSection {
+    padding: 14px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
 }
