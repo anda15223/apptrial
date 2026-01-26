@@ -13,9 +13,13 @@ type KpisResponse = {
 
     year: number;
 
+    // Old calendar comparison
     lastYearSameDay: number;
 
-    // ✅ NEW (from backend)
+    // ✅ NEW weekday comparison (best)
+    lastYearSameWeekday: number;
+    lastYearSameWeekdayDate: string;
+
     lastYearWeek: number;
     lastYearMonth: number;
     lastYearYear: number;
@@ -29,7 +33,14 @@ type KpisResponse = {
       direction: "up" | "down" | "flat";
     };
 
-    // ✅ NEW (from backend)
+    // ✅ NEW weekday comparison (best)
+    todayVsLastYearSameWeekday: {
+      current: number;
+      lastYear: number;
+      diff: number;
+      direction: "up" | "down" | "flat";
+    };
+
     weekVsLastYearWeek: {
       current: number;
       lastYear: number;
@@ -221,33 +232,32 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  // ✅ TODAY block
-  const today = kpis?.revenue?.today ?? 0;
-  const lastYearSameDay = kpis?.revenue?.lastYearSameDay ?? 0;
-  const todayDiffObj = kpis?.comparisons?.todayVsLastYearSameDay;
-
-  // ✅ WEEK block
-  const week = kpis?.revenue?.week ?? 0;
-  const lastYearWeek = kpis?.revenue?.lastYearWeek ?? 0;
-  const weekDiffObj = kpis?.comparisons?.weekVsLastYearWeek;
-
-  // ✅ MONTH block
-  const month = kpis?.revenue?.month ?? 0;
-  const lastYearMonth = kpis?.revenue?.lastYearMonth ?? 0;
-  const monthDiffObj = kpis?.comparisons?.monthVsLastYearMonth;
-
-  // ✅ YEAR block
-  const year = kpis?.revenue?.year ?? 0;
-  const lastYearYear = kpis?.revenue?.lastYearYear ?? 0;
-  const yearDiffObj = kpis?.comparisons?.yearVsLastYearYear;
-
-  // Header meta display
   const derived = useMemo(() => {
     const meta = kpis?.meta;
     return {
       cachedText: meta?.cached ? `cached (${meta?.cacheAgeSeconds}s)` : "live",
     };
   }, [kpis]);
+
+  // ✅ TODAY: use same weekday comparison (best)
+  const todayDiffObj = kpis?.comparisons?.todayVsLastYearSameWeekday;
+  const todayLyValue = kpis?.revenue?.lastYearSameWeekday ?? 0;
+  const todayLyDate = kpis?.revenue?.lastYearSameWeekdayDate ?? "";
+
+  // WEEK
+  const week = kpis?.revenue?.week ?? 0;
+  const lastYearWeek = kpis?.revenue?.lastYearWeek ?? 0;
+  const weekDiffObj = kpis?.comparisons?.weekVsLastYearWeek;
+
+  // MONTH
+  const month = kpis?.revenue?.month ?? 0;
+  const lastYearMonth = kpis?.revenue?.lastYearMonth ?? 0;
+  const monthDiffObj = kpis?.comparisons?.monthVsLastYearMonth;
+
+  // YEAR
+  const year = kpis?.revenue?.year ?? 0;
+  const lastYearYear = kpis?.revenue?.lastYearYear ?? 0;
+  const yearDiffObj = kpis?.comparisons?.yearVsLastYearYear;
 
   return (
     <div className="page">
@@ -284,12 +294,14 @@ export default function App() {
 
           <div className="topHalfGrid">
             <div className="salesCardsGrid">
-              {/* ✅ Sales Today */}
+              {/* ✅ Sales Today uses SAME WEEKDAY last year */}
               <StatCard
                 title="Sales Today"
                 value={<MoneyValue loading={loading} value={kpis?.revenue?.today} />}
-                subtitle={`Same day last year: ${fmtMoney(lastYearSameDay)} DKK`}
-                deltaValue={loading ? null : todayDiffObj?.diff ?? today - lastYearSameDay}
+                subtitle={`Same weekday last year (${todayLyDate}): ${fmtMoney(
+                  todayLyValue
+                )} DKK`}
+                deltaValue={loading ? null : todayDiffObj?.diff ?? null}
                 deltaKindOverride={
                   loading ? "neutral" : directionToKind(todayDiffObj?.direction)
                 }
@@ -297,13 +309,13 @@ export default function App() {
                   loading
                     ? "Loading…"
                     : `Diff: ${todayDiffObj?.diff && todayDiffObj.diff >= 0 ? "+" : ""}${fmtMoney(
-                        todayDiffObj?.diff ?? today - lastYearSameDay
+                        todayDiffObj?.diff ?? 0
                       )} DKK`
                 }
                 loading={loading}
               />
 
-              {/* ✅ Sales Week */}
+              {/* Sales Week */}
               <StatCard
                 title="Sales Week"
                 value={<MoneyValue loading={loading} value={week} />}
@@ -322,7 +334,7 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* ✅ Sales Month */}
+              {/* Sales Month */}
               <StatCard
                 title="Sales Month"
                 value={<MoneyValue loading={loading} value={month} />}
@@ -341,7 +353,7 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* ✅ Sales Year */}
+              {/* Sales Year */}
               <StatCard
                 title="Sales Year"
                 value={<MoneyValue loading={loading} value={year} />}
@@ -389,7 +401,7 @@ export default function App() {
       </div>
 
       <div className="footerNote">
-        Next upgrades: location dropdown, week/month/year KPI labels, real Planday shifts.
+        Now “Sales Today” is compared to the SAME WEEKDAY last year (52 weeks ago).
       </div>
     </div>
   );

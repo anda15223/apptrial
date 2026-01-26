@@ -31,9 +31,13 @@ type KpiResponse = {
 
     year: number;
 
+    // Calendar same day last year (not always relevant)
     lastYearSameDay: number;
 
-    // ✅ NEW
+    // ✅ NEW: same WEEKDAY last year (52 weeks ago)
+    lastYearSameWeekday: number;
+    lastYearSameWeekdayDate: string;
+
     lastYearWeek: number;
     lastYearMonth: number;
     lastYearYear: number;
@@ -41,6 +45,10 @@ type KpiResponse = {
 
   comparisons: {
     todayVsLastYearSameDay: DiffBlock;
+
+    // ✅ NEW: the comparison you actually want
+    todayVsLastYearSameWeekday: DiffBlock;
+
     weekVsLastYearWeek: DiffBlock;
     monthVsLastYearMonth: DiffBlock;
     yearVsLastYearYear: DiffBlock;
@@ -118,6 +126,17 @@ function monthToDateUnixRange(dateStr: string) {
   };
 }
 
+/**
+ * ✅ Same weekday last year (52 weeks ago)
+ * Subtract 364 days so weekday matches.
+ */
+function sameWeekdayLastYear(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00.000Z");
+  const d2 = new Date(d);
+  d2.setUTCDate(d2.getUTCDate() - 364); // 52 weeks ago
+  return formatYYYYMMDD(d2);
+}
+
 function makeDiff(current: number, lastYear: number): DiffBlock {
   const diff = Number(current) - Number(lastYear);
   const direction: DiffBlock["direction"] =
@@ -147,10 +166,13 @@ kpisRouter.get("/", async (req, res) => {
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
 
-    // lastYearSameDay
+    // Calendar same day last year
     const lastYearDateObj = new Date(dateObj);
     lastYearDateObj.setFullYear(dateObj.getFullYear() - 1);
     const lastYearSameDayStr = formatYYYYMMDD(lastYearDateObj);
+
+    // ✅ Same weekday last year
+    const lastYearSameWeekdayStr = sameWeekdayLastYear(dateStr);
 
     const lastYearMonth = lastYearDateObj.getMonth() + 1;
     const lastYearYear = lastYearDateObj.getFullYear();
@@ -164,11 +186,15 @@ kpisRouter.get("/", async (req, res) => {
       weekResp,
       monthResp,
       yearResp,
+
       lastYearSameDayResp,
+
+      // ✅ NEW
+      lastYearSameWeekdayResp,
+
       weekToDateResp,
       monthToDateResp,
 
-      // ✅ NEW last year totals
       lastYearWeekResp,
       lastYearMonthResp,
       lastYearYearResp,
@@ -177,11 +203,15 @@ kpisRouter.get("/", async (req, res) => {
       getBasicSalesByWeek(0, 0, dateStr),
       getBasicSalesByMonth(month, year, dateStr),
       getBasicSalesByYear(year, dateStr),
+
       getBasicSalesByDate(lastYearSameDayStr),
+
+      // ✅ NEW
+      getBasicSalesByDate(lastYearSameWeekdayStr),
+
       getRevenueByUnixRange(wtd.fromUnix, wtd.toUnix),
       getRevenueByUnixRange(mtd.fromUnix, mtd.toUnix),
 
-      // Same “week/month/year period” but using the date shifted 1 year back
       getBasicSalesByWeek(0, 0, lastYearSameDayStr),
       getBasicSalesByMonth(lastYearMonth, lastYearYear, lastYearSameDayStr),
       getBasicSalesByYear(lastYearYear, lastYearSameDayStr),
@@ -196,6 +226,8 @@ kpisRouter.get("/", async (req, res) => {
 
     const lastYearSameDay = Number(lastYearSameDayResp?.revenue || 0);
 
+    const lastYearSameWeekday = Number(lastYearSameWeekdayResp?.revenue || 0);
+
     const lastYearWeek = Number(lastYearWeekResp?.revenue || 0);
     const lastYearMonthVal = Number(lastYearMonthResp?.revenue || 0);
     const lastYearYearVal = Number(lastYearYearResp?.revenue || 0);
@@ -209,9 +241,13 @@ kpisRouter.get("/", async (req, res) => {
         month: monthVal,
         monthToDate,
         year: yearVal,
+
         lastYearSameDay,
 
         // ✅ NEW
+        lastYearSameWeekday,
+        lastYearSameWeekdayDate: lastYearSameWeekdayStr,
+
         lastYearWeek,
         lastYearMonth: lastYearMonthVal,
         lastYearYear: lastYearYearVal,
@@ -219,6 +255,10 @@ kpisRouter.get("/", async (req, res) => {
 
       comparisons: {
         todayVsLastYearSameDay: makeDiff(today, lastYearSameDay),
+
+        // ✅ NEW
+        todayVsLastYearSameWeekday: makeDiff(today, lastYearSameWeekday),
+
         weekVsLastYearWeek: makeDiff(week, lastYearWeek),
         monthVsLastYearMonth: makeDiff(monthVal, lastYearMonthVal),
         yearVsLastYearYear: makeDiff(yearVal, lastYearYearVal),
