@@ -6,3 +6,6 @@ dist
 backend/data/
 backend/input.json
 node_modules/
+apptrial/
+backend/src/integrations/posAutoLogin.ts
+
