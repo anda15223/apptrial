@@ -2,7 +2,6 @@
 import {
   getBasicSalesByDate,
   getBasicSalesByMonth,
-  getBasicSalesByWeek,
   getBasicSalesByYear,
   getRevenueByUnixRange,
 } from "../integrations/posOnline";
@@ -31,22 +30,24 @@ type KpiResponse = {
 
     year: number;
 
-    // Calendar same day last year (not always relevant)
+    // Calendar same date last year (not always relevant)
     lastYearSameDay: number;
 
-    // ✅ NEW: same WEEKDAY last year (52 weeks ago)
+    // ✅ SAME WEEKDAY (52 weeks ago) - correct for daily compare
     lastYearSameWeekday: number;
     lastYearSameWeekdayDate: string;
 
+    // ✅ WEEK ALIGNED (Mon→Sun) using 52-week reference
     lastYearWeek: number;
+    lastYearWeekRange: { from: string; to: string };
+
+    // Month/year calendar compare
     lastYearMonth: number;
     lastYearYear: number;
   };
 
   comparisons: {
     todayVsLastYearSameDay: DiffBlock;
-
-    // ✅ NEW: the comparison you actually want
     todayVsLastYearSameWeekday: DiffBlock;
 
     weekVsLastYearWeek: DiffBlock;
@@ -79,14 +80,49 @@ function getCacheAgeSeconds(savedAt: number) {
 }
 
 function formatYYYYMMDD(dateObj: Date) {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const d = String(dateObj.getDate()).padStart(2, "0");
+  const y = dateObj.getUTCFullYear();
+  const m = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
 
 function toUnixSeconds(d: Date) {
   return Math.floor(d.getTime() / 1000);
+}
+
+/**
+ * ✅ Same weekday last year (52 weeks ago)
+ * Subtract 364 days so weekday matches.
+ */
+function sameWeekdayLastYear(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00.000Z");
+  const d2 = new Date(d);
+  d2.setUTCDate(d2.getUTCDate() - 364);
+  return formatYYYYMMDD(d2);
+}
+
+/**
+ * ✅ Full week range (Mon 00:00 -> Sun 23:59) in UTC
+ */
+function fullWeekUnixRange(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00.000Z");
+  const day = d.getUTCDay(); // Sun=0
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(d);
+  monday.setUTCDate(d.getUTCDate() + diffToMonday);
+  monday.setUTCHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  sunday.setUTCHours(23, 59, 59, 999);
+
+  return {
+    fromUnix: toUnixSeconds(monday),
+    toUnix: toUnixSeconds(sunday),
+    fromDate: formatYYYYMMDD(monday),
+    toDate: formatYYYYMMDD(sunday),
+  };
 }
 
 /**
@@ -126,17 +162,6 @@ function monthToDateUnixRange(dateStr: string) {
   };
 }
 
-/**
- * ✅ Same weekday last year (52 weeks ago)
- * Subtract 364 days so weekday matches.
- */
-function sameWeekdayLastYear(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00.000Z");
-  const d2 = new Date(d);
-  d2.setUTCDate(d2.getUTCDate() - 364); // 52 weeks ago
-  return formatYYYYMMDD(d2);
-}
-
 function makeDiff(current: number, lastYear: number): DiffBlock {
   const diff = Number(current) - Number(lastYear);
   const direction: DiffBlock["direction"] =
@@ -159,76 +184,97 @@ kpisRouter.get("/", async (req, res) => {
       const age = getCacheAgeSeconds(cached.savedAt);
       return res.json({
         ...cached.data,
-        meta: { ...cached.data.meta, cached: true, cacheAgeSeconds: age, source: "cache" },
+        meta: {
+          ...cached.data.meta,
+          cached: true,
+          cacheAgeSeconds: age,
+          source: "cache",
+        },
       });
     }
 
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
 
-    // Calendar same day last year
-    const lastYearDateObj = new Date(dateObj);
-    lastYearDateObj.setFullYear(dateObj.getFullYear() - 1);
-    const lastYearSameDayStr = formatYYYYMMDD(lastYearDateObj);
+    // Calendar same date last year
+    const lastYearSameDayDateObj = new Date(dateObj);
+    lastYearSameDayDateObj.setFullYear(dateObj.getFullYear() - 1);
+    const lastYearSameDayStr = formatYYYYMMDD(
+      new Date(
+        Date.UTC(
+          lastYearSameDayDateObj.getUTCFullYear(),
+          lastYearSameDayDateObj.getUTCMonth(),
+          lastYearSameDayDateObj.getUTCDate()
+        )
+      )
+    );
 
-    // ✅ Same weekday last year
+    // ✅ Same weekday last year (52 weeks ago)
     const lastYearSameWeekdayStr = sameWeekdayLastYear(dateStr);
 
-    const lastYearMonth = lastYearDateObj.getMonth() + 1;
-    const lastYearYear = lastYearDateObj.getFullYear();
+    // ✅ Week ranges (fix for week comparison)
+    const thisWeekRange = fullWeekUnixRange(dateStr);
+    const lastYearWeekRange = fullWeekUnixRange(lastYearSameWeekdayStr);
 
-    // weekToDate/monthToDate ranges
+    // weekToDate / monthToDate unix ranges
     const wtd = weekToDateUnixRange(dateStr);
     const mtd = monthToDateUnixRange(dateStr);
 
     const [
       todayResp,
+
+      // ✅ Week totals now correct (Mon→Sun)
       weekResp,
+      lastYearWeekResp,
+
+      // Month/year totals (kept as before)
       monthResp,
       yearResp,
 
       lastYearSameDayResp,
-
-      // ✅ NEW
       lastYearSameWeekdayResp,
 
       weekToDateResp,
       monthToDateResp,
 
-      lastYearWeekResp,
+      // Calendar compare for month/year
       lastYearMonthResp,
       lastYearYearResp,
     ] = await Promise.all([
       getBasicSalesByDate(dateStr),
-      getBasicSalesByWeek(0, 0, dateStr),
+
+      getRevenueByUnixRange(thisWeekRange.fromUnix, thisWeekRange.toUnix),
+      getRevenueByUnixRange(lastYearWeekRange.fromUnix, lastYearWeekRange.toUnix),
+
       getBasicSalesByMonth(month, year, dateStr),
       getBasicSalesByYear(year, dateStr),
 
       getBasicSalesByDate(lastYearSameDayStr),
-
-      // ✅ NEW
       getBasicSalesByDate(lastYearSameWeekdayStr),
 
       getRevenueByUnixRange(wtd.fromUnix, wtd.toUnix),
       getRevenueByUnixRange(mtd.fromUnix, mtd.toUnix),
 
-      getBasicSalesByWeek(0, 0, lastYearSameDayStr),
-      getBasicSalesByMonth(lastYearMonth, lastYearYear, lastYearSameDayStr),
-      getBasicSalesByYear(lastYearYear, lastYearSameDayStr),
+      getBasicSalesByMonth(month, year - 1, lastYearSameDayStr),
+      getBasicSalesByYear(year - 1, lastYearSameDayStr),
     ]);
 
     const today = Number(todayResp?.revenue || 0);
+
     const week = Number(weekResp?.revenue || 0);
+    const lastYearWeek = Number(lastYearWeekResp?.revenue || 0);
+
     const weekToDate = Number(weekToDateResp?.revenue || 0);
+
     const monthVal = Number(monthResp?.revenue || 0);
     const monthToDate = Number(monthToDateResp?.revenue || 0);
+
     const yearVal = Number(yearResp?.revenue || 0);
 
     const lastYearSameDay = Number(lastYearSameDayResp?.revenue || 0);
 
     const lastYearSameWeekday = Number(lastYearSameWeekdayResp?.revenue || 0);
 
-    const lastYearWeek = Number(lastYearWeekResp?.revenue || 0);
     const lastYearMonthVal = Number(lastYearMonthResp?.revenue || 0);
     const lastYearYearVal = Number(lastYearYearResp?.revenue || 0);
 
@@ -236,27 +282,32 @@ kpisRouter.get("/", async (req, res) => {
       date: dateStr,
       revenue: {
         today,
+
         week,
         weekToDate,
+
         month: monthVal,
         monthToDate,
+
         year: yearVal,
 
         lastYearSameDay,
 
-        // ✅ NEW
         lastYearSameWeekday,
         lastYearSameWeekdayDate: lastYearSameWeekdayStr,
 
         lastYearWeek,
+        lastYearWeekRange: {
+          from: lastYearWeekRange.fromDate,
+          to: lastYearWeekRange.toDate,
+        },
+
         lastYearMonth: lastYearMonthVal,
         lastYearYear: lastYearYearVal,
       },
 
       comparisons: {
         todayVsLastYearSameDay: makeDiff(today, lastYearSameDay),
-
-        // ✅ NEW
         todayVsLastYearSameWeekday: makeDiff(today, lastYearSameWeekday),
 
         weekVsLastYearWeek: makeDiff(week, lastYearWeek),
