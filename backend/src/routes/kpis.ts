@@ -4,13 +4,11 @@ import {
   getBasicSalesByMonth,
   getBasicSalesByWeek,
   getBasicSalesByYear,
+  getRevenueByUnixRange,
 } from "../integrations/posOnline";
 
 export const kpisRouter = express.Router();
 
-/**
- * ✅ Stable cache (60 seconds)
- */
 const CACHE_TTL_MS = 60 * 1000;
 
 type KpiResponse = {
@@ -18,7 +16,9 @@ type KpiResponse = {
   revenue: {
     today: number;
     week: number;
+    weekToDate: number;
     month: number;
+    monthToDate: number;
     year: number;
     lastYearSameDay: number;
   };
@@ -26,7 +26,6 @@ type KpiResponse = {
     cached: boolean;
     cacheAgeSeconds: number;
     source: "live" | "cache";
-    message?: string;
   };
 };
 
@@ -34,9 +33,7 @@ const cache: Record<string, { savedAt: number; data: KpiResponse }> = {};
 
 function parseDateOrThrow(dateStr?: string) {
   if (!dateStr) throw new Error("Missing date query param. Use ?date=YYYY-MM-DD");
-
-  const ok = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
-  if (!ok) throw new Error("Invalid date format. Use YYYY-MM-DD");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) throw new Error("Invalid date format. Use YYYY-MM-DD");
 
   const dateObj = new Date(dateStr + "T00:00:00");
   if (isNaN(dateObj.getTime())) throw new Error("Invalid date value");
@@ -55,57 +52,100 @@ function formatYYYYMMDD(dateObj: Date) {
   return `${y}-${m}-${d}`;
 }
 
+function toUnixSeconds(d: Date) {
+  return Math.floor(d.getTime() / 1000);
+}
+
+/**
+ * WeekToDate = Monday 00:00 -> selected date 23:59 (UTC)
+ */
+function weekToDateUnixRange(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00.000Z");
+  const day = d.getUTCDay(); // Sun=0
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(d);
+  monday.setUTCDate(d.getUTCDate() + diffToMonday);
+  monday.setUTCHours(0, 0, 0, 0);
+
+  const endOfSelected = new Date(dateStr + "T23:59:59.999Z");
+
+  return {
+    fromUnix: toUnixSeconds(monday),
+    toUnix: toUnixSeconds(endOfSelected),
+  };
+}
+
+/**
+ * MonthToDate = 1st 00:00 -> selected date 23:59 (UTC)
+ */
+function monthToDateUnixRange(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00.000Z");
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth();
+
+  const first = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+  const endOfSelected = new Date(dateStr + "T23:59:59.999Z");
+
+  return {
+    fromUnix: toUnixSeconds(first),
+    toUnix: toUnixSeconds(endOfSelected),
+  };
+}
+
 kpisRouter.get("/", async (req, res) => {
   try {
     const { dateStr, dateObj } = parseDateOrThrow(req.query.date as string);
 
-    // ✅ Serve cache if fresh
     const cached = cache[dateStr];
     if (cached && Date.now() - cached.savedAt < CACHE_TTL_MS) {
       const age = getCacheAgeSeconds(cached.savedAt);
       return res.json({
         ...cached.data,
-        meta: {
-          ...cached.data.meta,
-          cached: true,
-          cacheAgeSeconds: age,
-          source: "cache",
-        },
+        meta: { ...cached.data.meta, cached: true, cacheAgeSeconds: age, source: "cache" },
       });
     }
 
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
 
-    // ✅ Last year same day (calendar)
+    // lastYearSameDay
     const lastYearDateObj = new Date(dateObj);
     lastYearDateObj.setFullYear(dateObj.getFullYear() - 1);
     const lastYearSameDayStr = formatYYYYMMDD(lastYearDateObj);
 
-    // ✅ IMPORTANT: pass dateStr into week/month/year
-    const [todayResp, weekResp, monthResp, yearResp, lastYearSameDayResp] =
-      await Promise.all([
-        getBasicSalesByDate(dateStr),
-        getBasicSalesByWeek(0, 0, dateStr),
-        getBasicSalesByMonth(month, year, dateStr),
-        getBasicSalesByYear(year, dateStr),
-        getBasicSalesByDate(lastYearSameDayStr),
-      ]);
+    // weekToDate/monthToDate ranges
+    const wtd = weekToDateUnixRange(dateStr);
+    const mtd = monthToDateUnixRange(dateStr);
 
-    const todayRevenue = Number(todayResp?.revenue || 0);
-    const weekRevenue = Number(weekResp?.revenue || 0);
-    const monthRevenue = Number(monthResp?.revenue || 0);
-    const yearRevenue = Number(yearResp?.revenue || 0);
-    const lastYearSameDayRevenue = Number(lastYearSameDayResp?.revenue || 0);
+    const [
+      todayResp,
+      weekResp,
+      monthResp,
+      yearResp,
+      lastYearSameDayResp,
+      weekToDateResp,
+      monthToDateResp,
+    ] = await Promise.all([
+      getBasicSalesByDate(dateStr),
+      getBasicSalesByWeek(0, 0, dateStr),
+      getBasicSalesByMonth(month, year, dateStr),
+      getBasicSalesByYear(year, dateStr),
+      getBasicSalesByDate(lastYearSameDayStr),
+      getRevenueByUnixRange(wtd.fromUnix, wtd.toUnix),
+      getRevenueByUnixRange(mtd.fromUnix, mtd.toUnix),
+    ]);
 
     const liveResponse: KpiResponse = {
       date: dateStr,
       revenue: {
-        today: todayRevenue,
-        week: weekRevenue,
-        month: monthRevenue,
-        year: yearRevenue,
-        lastYearSameDay: lastYearSameDayRevenue,
+        today: Number(todayResp?.revenue || 0),
+        week: Number(weekResp?.revenue || 0),
+        weekToDate: Number(weekToDateResp?.revenue || 0),
+        month: Number(monthResp?.revenue || 0),
+        monthToDate: Number(monthToDateResp?.revenue || 0),
+        year: Number(yearResp?.revenue || 0),
+        lastYearSameDay: Number(lastYearSameDayResp?.revenue || 0),
       },
       meta: {
         cached: false,
@@ -118,8 +158,6 @@ kpisRouter.get("/", async (req, res) => {
 
     return res.json(liveResponse);
   } catch (err: any) {
-    return res.status(400).json({
-      error: err?.message || "Unknown error",
-    });
+    return res.status(400).json({ error: err?.message || "Unknown error" });
   }
 });
