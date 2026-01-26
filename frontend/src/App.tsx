@@ -13,14 +13,17 @@ type KpisResponse = {
 
     year: number;
 
-    // Old calendar comparison
+    // Calendar same date last year
     lastYearSameDay: number;
 
-    // ✅ NEW weekday comparison (best)
+    // ✅ Same weekday last year (52 weeks ago)
     lastYearSameWeekday: number;
     lastYearSameWeekdayDate: string;
 
+    // ✅ Week aligned (Mon→Sun) using 52-week reference
     lastYearWeek: number;
+    lastYearWeekRange?: { from: string; to: string };
+
     lastYearMonth: number;
     lastYearYear: number;
   };
@@ -33,7 +36,6 @@ type KpisResponse = {
       direction: "up" | "down" | "flat";
     };
 
-    // ✅ NEW weekday comparison (best)
     todayVsLastYearSameWeekday: {
       current: number;
       lastYear: number;
@@ -239,25 +241,34 @@ export default function App() {
     };
   }, [kpis]);
 
-  // ✅ TODAY: use same weekday comparison (best)
+  // ✅ Today (weekday aligned)
   const todayDiffObj = kpis?.comparisons?.todayVsLastYearSameWeekday;
   const todayLyValue = kpis?.revenue?.lastYearSameWeekday ?? 0;
   const todayLyDate = kpis?.revenue?.lastYearSameWeekdayDate ?? "";
 
-  // WEEK
+  // ✅ Week (Mon→Sun aligned)
   const week = kpis?.revenue?.week ?? 0;
   const lastYearWeek = kpis?.revenue?.lastYearWeek ?? 0;
+  const lastYearWeekRangeFrom = kpis?.revenue?.lastYearWeekRange?.from ?? "";
+  const lastYearWeekRangeTo = kpis?.revenue?.lastYearWeekRange?.to ?? "";
   const weekDiffObj = kpis?.comparisons?.weekVsLastYearWeek;
 
-  // MONTH
+  // Month
   const month = kpis?.revenue?.month ?? 0;
   const lastYearMonth = kpis?.revenue?.lastYearMonth ?? 0;
   const monthDiffObj = kpis?.comparisons?.monthVsLastYearMonth;
 
-  // YEAR
+  // Year
   const year = kpis?.revenue?.year ?? 0;
   const lastYearYear = kpis?.revenue?.lastYearYear ?? 0;
   const yearDiffObj = kpis?.comparisons?.yearVsLastYearYear;
+
+  const weekSubtitle =
+    lastYearWeekRangeFrom && lastYearWeekRangeTo
+      ? `Same week last year (${lastYearWeekRangeFrom} → ${lastYearWeekRangeTo}): ${fmtMoney(
+          lastYearWeek
+        )} DKK`
+      : `Same week last year: ${fmtMoney(lastYearWeek)} DKK`;
 
   return (
     <div className="page">
@@ -294,7 +305,7 @@ export default function App() {
 
           <div className="topHalfGrid">
             <div className="salesCardsGrid">
-              {/* ✅ Sales Today uses SAME WEEKDAY last year */}
+              {/* ✅ Sales Today */}
               <StatCard
                 title="Sales Today"
                 value={<MoneyValue loading={loading} value={kpis?.revenue?.today} />}
@@ -315,11 +326,11 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* Sales Week */}
+              {/* ✅ Sales Week (now shows range) */}
               <StatCard
                 title="Sales Week"
                 value={<MoneyValue loading={loading} value={week} />}
-                subtitle={`Same week last year: ${fmtMoney(lastYearWeek)} DKK`}
+                subtitle={weekSubtitle}
                 deltaValue={loading ? null : weekDiffObj?.diff ?? week - lastYearWeek}
                 deltaKindOverride={
                   loading ? "neutral" : directionToKind(weekDiffObj?.direction)
@@ -387,7 +398,7 @@ export default function App() {
           <div className="bottomHalfGrid">
             <Panel title="COGS (BC Catering + Inco)" subtitle="Integration coming">
               <div className="panelNote">
-                Next step: connect your invoices + calculate COGS % of sales.
+                Next step: connect invoices + calculate COGS % of sales.
               </div>
             </Panel>
 
@@ -401,7 +412,7 @@ export default function App() {
       </div>
 
       <div className="footerNote">
-        Now “Sales Today” is compared to the SAME WEEKDAY last year (52 weeks ago).
+        Today compares to same weekday last year (52 weeks ago). Week compares Mon→Sun vs Mon→Sun (52 weeks ago).
       </div>
     </div>
   );
