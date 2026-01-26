@@ -11,17 +11,41 @@ export const kpisRouter = express.Router();
 
 const CACHE_TTL_MS = 60 * 1000;
 
+type DiffBlock = {
+  current: number;
+  lastYear: number;
+  diff: number;
+  direction: "up" | "down" | "flat";
+};
+
 type KpiResponse = {
   date: string;
   revenue: {
     today: number;
+
     week: number;
     weekToDate: number;
+
     month: number;
     monthToDate: number;
+
     year: number;
+
     lastYearSameDay: number;
+
+    // ✅ NEW
+    lastYearWeek: number;
+    lastYearMonth: number;
+    lastYearYear: number;
   };
+
+  comparisons: {
+    todayVsLastYearSameDay: DiffBlock;
+    weekVsLastYearWeek: DiffBlock;
+    monthVsLastYearMonth: DiffBlock;
+    yearVsLastYearYear: DiffBlock;
+  };
+
   meta: {
     cached: boolean;
     cacheAgeSeconds: number;
@@ -33,7 +57,8 @@ const cache: Record<string, { savedAt: number; data: KpiResponse }> = {};
 
 function parseDateOrThrow(dateStr?: string) {
   if (!dateStr) throw new Error("Missing date query param. Use ?date=YYYY-MM-DD");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) throw new Error("Invalid date format. Use YYYY-MM-DD");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+    throw new Error("Invalid date format. Use YYYY-MM-DD");
 
   const dateObj = new Date(dateStr + "T00:00:00");
   if (isNaN(dateObj.getTime())) throw new Error("Invalid date value");
@@ -93,6 +118,19 @@ function monthToDateUnixRange(dateStr: string) {
   };
 }
 
+function makeDiff(current: number, lastYear: number): DiffBlock {
+  const diff = Number(current) - Number(lastYear);
+  const direction: DiffBlock["direction"] =
+    diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+
+  return {
+    current: Number(current),
+    lastYear: Number(lastYear),
+    diff: Number(diff),
+    direction,
+  };
+}
+
 kpisRouter.get("/", async (req, res) => {
   try {
     const { dateStr, dateObj } = parseDateOrThrow(req.query.date as string);
@@ -114,6 +152,9 @@ kpisRouter.get("/", async (req, res) => {
     lastYearDateObj.setFullYear(dateObj.getFullYear() - 1);
     const lastYearSameDayStr = formatYYYYMMDD(lastYearDateObj);
 
+    const lastYearMonth = lastYearDateObj.getMonth() + 1;
+    const lastYearYear = lastYearDateObj.getFullYear();
+
     // weekToDate/monthToDate ranges
     const wtd = weekToDateUnixRange(dateStr);
     const mtd = monthToDateUnixRange(dateStr);
@@ -126,6 +167,11 @@ kpisRouter.get("/", async (req, res) => {
       lastYearSameDayResp,
       weekToDateResp,
       monthToDateResp,
+
+      // ✅ NEW last year totals
+      lastYearWeekResp,
+      lastYearMonthResp,
+      lastYearYearResp,
     ] = await Promise.all([
       getBasicSalesByDate(dateStr),
       getBasicSalesByWeek(0, 0, dateStr),
@@ -134,19 +180,50 @@ kpisRouter.get("/", async (req, res) => {
       getBasicSalesByDate(lastYearSameDayStr),
       getRevenueByUnixRange(wtd.fromUnix, wtd.toUnix),
       getRevenueByUnixRange(mtd.fromUnix, mtd.toUnix),
+
+      // Same “week/month/year period” but using the date shifted 1 year back
+      getBasicSalesByWeek(0, 0, lastYearSameDayStr),
+      getBasicSalesByMonth(lastYearMonth, lastYearYear, lastYearSameDayStr),
+      getBasicSalesByYear(lastYearYear, lastYearSameDayStr),
     ]);
+
+    const today = Number(todayResp?.revenue || 0);
+    const week = Number(weekResp?.revenue || 0);
+    const weekToDate = Number(weekToDateResp?.revenue || 0);
+    const monthVal = Number(monthResp?.revenue || 0);
+    const monthToDate = Number(monthToDateResp?.revenue || 0);
+    const yearVal = Number(yearResp?.revenue || 0);
+
+    const lastYearSameDay = Number(lastYearSameDayResp?.revenue || 0);
+
+    const lastYearWeek = Number(lastYearWeekResp?.revenue || 0);
+    const lastYearMonthVal = Number(lastYearMonthResp?.revenue || 0);
+    const lastYearYearVal = Number(lastYearYearResp?.revenue || 0);
 
     const liveResponse: KpiResponse = {
       date: dateStr,
       revenue: {
-        today: Number(todayResp?.revenue || 0),
-        week: Number(weekResp?.revenue || 0),
-        weekToDate: Number(weekToDateResp?.revenue || 0),
-        month: Number(monthResp?.revenue || 0),
-        monthToDate: Number(monthToDateResp?.revenue || 0),
-        year: Number(yearResp?.revenue || 0),
-        lastYearSameDay: Number(lastYearSameDayResp?.revenue || 0),
+        today,
+        week,
+        weekToDate,
+        month: monthVal,
+        monthToDate,
+        year: yearVal,
+        lastYearSameDay,
+
+        // ✅ NEW
+        lastYearWeek,
+        lastYearMonth: lastYearMonthVal,
+        lastYearYear: lastYearYearVal,
       },
+
+      comparisons: {
+        todayVsLastYearSameDay: makeDiff(today, lastYearSameDay),
+        weekVsLastYearWeek: makeDiff(week, lastYearWeek),
+        monthVsLastYearMonth: makeDiff(monthVal, lastYearMonthVal),
+        yearVsLastYearYear: makeDiff(yearVal, lastYearYearVal),
+      },
+
       meta: {
         cached: false,
         cacheAgeSeconds: 0,
