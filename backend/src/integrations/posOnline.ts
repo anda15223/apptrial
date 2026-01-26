@@ -25,11 +25,15 @@ function getAuthHeaders() {
   }
 
   return {
-    cookie,
-    "x-xsrf-token": xsrf,
-    accept: "application/json, text/plain, */*",
-    origin: "https://bo.onlinepos.dk",
-    referer: "https://bo.onlinepos.dk/",
+    // ✅ MUST be exactly these header names:
+    Cookie: cookie,
+    "X-XSRF-TOKEN": xsrf,
+
+    // ✅ Optional but good to mimic browser
+    Accept: "application/json, text/plain, */*",
+    Origin: "https://bo.onlinepos.dk",
+    Referer: "https://bo.onlinepos.dk/",
+    "X-Requested-With": "XMLHttpRequest",
   };
 }
 
@@ -106,8 +110,11 @@ export async function getBasicSalesByDate(date: string) {
   return callBasicSales({ date });
 }
 
-// ✅ WEEK (week_number=4&week_year=2026)
-export async function getBasicSalesByWeek(weekNumber: number, weekYear: number) {
+// ✅ WEEK (week_number=5&week_year=2026)
+export async function getBasicSalesByWeek(
+  weekNumber: number,
+  weekYear: number
+) {
   return callBasicSales({ week_number: weekNumber, week_year: weekYear });
 }
 
