@@ -20,7 +20,7 @@ type KpiResponse = {
     week: number;
     month: number;
     year: number;
-    lastYearSameDay?: number;
+    lastYearSameDay: number;
   };
   meta: {
     cached: boolean;
@@ -48,6 +48,13 @@ function getCacheAgeSeconds(savedAt: number) {
   return Math.floor((Date.now() - savedAt) / 1000);
 }
 
+function formatYYYYMMDD(dateObj: Date) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 kpisRouter.get("/", async (req, res) => {
   try {
     const { dateStr, dateObj } = parseDateOrThrow(req.query.date as string);
@@ -70,18 +77,26 @@ kpisRouter.get("/", async (req, res) => {
     const month = dateObj.getMonth() + 1;
     const year = dateObj.getFullYear();
 
-    // ✅ IMPORTANT: pass dateStr into week/month/year now
-    const [todayResp, weekResp, monthResp, yearResp] = await Promise.all([
-      getBasicSalesByDate(dateStr),
-      getBasicSalesByWeek(0, 0, dateStr),
-      getBasicSalesByMonth(month, year, dateStr),
-      getBasicSalesByYear(year, dateStr),
-    ]);
+    // ✅ Last year same day (calendar)
+    const lastYearDateObj = new Date(dateObj);
+    lastYearDateObj.setFullYear(dateObj.getFullYear() - 1);
+    const lastYearSameDayStr = formatYYYYMMDD(lastYearDateObj);
+
+    // ✅ IMPORTANT: pass dateStr into week/month/year
+    const [todayResp, weekResp, monthResp, yearResp, lastYearSameDayResp] =
+      await Promise.all([
+        getBasicSalesByDate(dateStr),
+        getBasicSalesByWeek(0, 0, dateStr),
+        getBasicSalesByMonth(month, year, dateStr),
+        getBasicSalesByYear(year, dateStr),
+        getBasicSalesByDate(lastYearSameDayStr),
+      ]);
 
     const todayRevenue = Number(todayResp?.revenue || 0);
     const weekRevenue = Number(weekResp?.revenue || 0);
     const monthRevenue = Number(monthResp?.revenue || 0);
     const yearRevenue = Number(yearResp?.revenue || 0);
+    const lastYearSameDayRevenue = Number(lastYearSameDayResp?.revenue || 0);
 
     const liveResponse: KpiResponse = {
       date: dateStr,
@@ -90,7 +105,7 @@ kpisRouter.get("/", async (req, res) => {
         week: weekRevenue,
         month: monthRevenue,
         year: yearRevenue,
-        lastYearSameDay: 0,
+        lastYearSameDay: lastYearSameDayRevenue,
       },
       meta: {
         cached: false,
