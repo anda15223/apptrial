@@ -72,6 +72,35 @@ type KpisResponse = {
   };
 };
 
+type LaborDayResp = {
+  date: string;
+  baseCost?: number;
+  upliftPct?: number;
+  laborCost: number;
+};
+
+type LaborWeekResp = {
+  from: string;
+  to: string;
+  baseCost?: number;
+  upliftPct?: number;
+  laborCost: number;
+};
+
+type LaborMonthResp = {
+  month: string;
+  baseCost?: number;
+  upliftPct?: number;
+  laborCost: number;
+};
+
+type LaborYearResp = {
+  year: string;
+  baseCost?: number;
+  upliftPct?: number;
+  laborCost: number;
+};
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://apptrial-c8km.onrender.com";
 
@@ -196,12 +225,29 @@ function directionToKind(direction?: "up" | "down" | "flat") {
   return "neutral";
 }
 
+function pctLamp(pct: number | null) {
+  if (pct === null || !Number.isFinite(pct)) return "neutral" as const;
+  if (pct <= 20) return "green" as const;
+  if (pct <= 25) return "neutral" as const;
+  return "red" as const;
+}
+
+function pctText(pct: number | null) {
+  if (pct === null || !Number.isFinite(pct)) return "—";
+  return `${pct.toFixed(1)}%`;
+}
+
 export default function App() {
   const [date] = useState(getTodayIso());
   const [kpis, setKpis] = useState<KpisResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [laborDay, setLaborDay] = useState<LaborDayResp | null>(null);
+  const [laborWeek, setLaborWeek] = useState<LaborWeekResp | null>(null);
+  const [laborMonth, setLaborMonth] = useState<LaborMonthResp | null>(null);
+  const [laborYear, setLaborYear] = useState<LaborYearResp | null>(null);
 
   const locationName = "Aarhus (Gaia)";
 
@@ -227,9 +273,33 @@ export default function App() {
     }
   }
 
+  async function loadLabor() {
+    try {
+      const [d, w, m, y] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/labor/day?date=${date}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/labor/week?date=${date}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/labor/month?date=${date}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/labor/year?date=${date}`, { cache: "no-store" }),
+      ]);
+
+      if (d.ok) setLaborDay((await d.json()) as LaborDayResp);
+      if (w.ok) setLaborWeek((await w.json()) as LaborWeekResp);
+      if (m.ok) setLaborMonth((await m.json()) as LaborMonthResp);
+      if (y.ok) setLaborYear((await y.json()) as LaborYearResp);
+    } catch {
+      // ignore
+    }
+  }
+
   useEffect(() => {
     loadKpis(false);
-    const t = setInterval(() => loadKpis(true), 60_000);
+    loadLabor();
+
+    const t = setInterval(() => {
+      loadKpis(true);
+      loadLabor();
+    }, 60_000);
+
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
@@ -241,24 +311,20 @@ export default function App() {
     };
   }, [kpis]);
 
-  // ✅ Today (weekday aligned)
   const todayDiffObj = kpis?.comparisons?.todayVsLastYearSameWeekday;
   const todayLyValue = kpis?.revenue?.lastYearSameWeekday ?? 0;
   const todayLyDate = kpis?.revenue?.lastYearSameWeekdayDate ?? "";
 
-  // ✅ Week (Mon→Sun aligned)
   const week = kpis?.revenue?.week ?? 0;
   const lastYearWeek = kpis?.revenue?.lastYearWeek ?? 0;
   const lastYearWeekRangeFrom = kpis?.revenue?.lastYearWeekRange?.from ?? "";
   const lastYearWeekRangeTo = kpis?.revenue?.lastYearWeekRange?.to ?? "";
   const weekDiffObj = kpis?.comparisons?.weekVsLastYearWeek;
 
-  // Month
   const month = kpis?.revenue?.month ?? 0;
   const lastYearMonth = kpis?.revenue?.lastYearMonth ?? 0;
   const monthDiffObj = kpis?.comparisons?.monthVsLastYearMonth;
 
-  // Year
   const year = kpis?.revenue?.year ?? 0;
   const lastYearYear = kpis?.revenue?.lastYearYear ?? 0;
   const yearDiffObj = kpis?.comparisons?.yearVsLastYearYear;
@@ -269,6 +335,25 @@ export default function App() {
           lastYearWeek
         )} DKK`
       : `Same week last year: ${fmtMoney(lastYearWeek)} DKK`;
+
+  const salesToday = kpis?.revenue?.today ?? 0;
+  const salesWeek = kpis?.revenue?.week ?? 0;
+  const salesMonth = kpis?.revenue?.month ?? 0;
+  const salesYear = kpis?.revenue?.year ?? 0;
+
+  const laborTodayCost = laborDay?.laborCost ?? null;
+  const laborWeekCost = laborWeek?.laborCost ?? null;
+  const laborMonthCost = laborMonth?.laborCost ?? null;
+  const laborYearCost = laborYear?.laborCost ?? null;
+
+  const laborTodayPct =
+    laborTodayCost !== null && salesToday > 0 ? (laborTodayCost / salesToday) * 100 : null;
+  const laborWeekPct =
+    laborWeekCost !== null && salesWeek > 0 ? (laborWeekCost / salesWeek) * 100 : null;
+  const laborMonthPct =
+    laborMonthCost !== null && salesMonth > 0 ? (laborMonthCost / salesMonth) * 100 : null;
+  const laborYearPct =
+    laborYearCost !== null && salesYear > 0 ? (laborYearCost / salesYear) * 100 : null;
 
   return (
     <div className="page">
@@ -305,7 +390,6 @@ export default function App() {
 
           <div className="topHalfGrid">
             <div className="salesCardsGrid">
-              {/* ✅ Sales Today */}
               <StatCard
                 title="Sales Today"
                 value={<MoneyValue loading={loading} value={kpis?.revenue?.today} />}
@@ -326,7 +410,6 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* ✅ Sales Week (now shows range) */}
               <StatCard
                 title="Sales Week"
                 value={<MoneyValue loading={loading} value={week} />}
@@ -345,7 +428,6 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* Sales Month */}
               <StatCard
                 title="Sales Month"
                 value={<MoneyValue loading={loading} value={month} />}
@@ -364,7 +446,6 @@ export default function App() {
                 loading={loading}
               />
 
-              {/* Sales Year */}
               <StatCard
                 title="Sales Year"
                 value={<MoneyValue loading={loading} value={year} />}
@@ -384,9 +465,39 @@ export default function App() {
               />
             </div>
 
-            <Panel title="Planday (Shifts Today)" subtitle="Integration coming">
-              <div className="panelNote">
-                Next step: connect Planday API and show real shifts.
+            <Panel title="Planday (Labor)" subtitle="Labor cost + % of sales">
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>Today</div>
+                    <div>{laborTodayCost === null ? "—" : `${fmtMoney(laborTodayCost)} DKK`}</div>
+                  </div>
+                  <MiniPill kind={pctLamp(laborTodayPct)} text={pctText(laborTodayPct)} />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>Week</div>
+                    <div>{laborWeekCost === null ? "—" : `${fmtMoney(laborWeekCost)} DKK`}</div>
+                  </div>
+                  <MiniPill kind={pctLamp(laborWeekPct)} text={pctText(laborWeekPct)} />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>Month</div>
+                    <div>{laborMonthCost === null ? "—" : `${fmtMoney(laborMonthCost)} DKK`}</div>
+                  </div>
+                  <MiniPill kind={pctLamp(laborMonthPct)} text={pctText(laborMonthPct)} />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>Year</div>
+                    <div>{laborYearCost === null ? "—" : `${fmtMoney(laborYearCost)} DKK`}</div>
+                  </div>
+                  <MiniPill kind={pctLamp(laborYearPct)} text={pctText(laborYearPct)} />
+                </div>
               </div>
             </Panel>
           </div>
@@ -417,3 +528,4 @@ export default function App() {
     </div>
   );
 }
+

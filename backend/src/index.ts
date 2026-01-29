@@ -7,6 +7,9 @@ import { inputsRouter } from "./routes/inputs";
 import { kpisRouter } from "./routes/kpis";
 import { posRouter } from "./routes/pos";
 import { importRouter } from "./routes/import";
+import { plandayRouter } from "./routes/planday";
+
+import laborRoutes from "./labor/laborRoutes";
 
 const app = express();
 
@@ -19,13 +22,17 @@ app.use("/api/inputs", inputsRouter);
 app.use("/api/kpis", kpisRouter);
 app.use("/api/pos", posRouter);
 app.use("/api/import", importRouter);
+app.use("/api/planday", plandayRouter);
 
-// Simple health endpoint (so Render/Netlify can test it)
+// ✅ NEW – Labor (isolated, safe)
+app.use("/api/labor", laborRoutes);
+
+// Health check
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-// Version endpoint (to verify production commit)
+// Version endpoint
 app.get("/api/version", (_req, res) => {
   res.json({
     ok: true,
