@@ -1,0 +1,2386 @@
+﻿
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="da" lang="da">
+  <head>
+    <title>Salary</title>
+    <style type="text/css">
+
+      body { margin: 0 auto; width: 90%; }
+
+      body * { font-size: 10px; font-family: Arial; }
+
+      h2 { font-size: 12px; }
+      .small { font-size: 8px; }
+
+      div.page { page-break-before: always; padding: 40px; }
+
+      div.first { page-break-before: auto; padding: 40px; }
+
+      table.paySlip  { width: 100%; table-layout: fixed; border-collapse: collapse; }
+      .paymentTypeNumber { width: 5em; }
+      .dutyPeriod { width: 10em; }
+      .dutyDate{ width: 6em; }
+      .count { width: 4em; }
+      .hourlySalary { width: 8em; }
+      .amount { width: 8em; }
+
+      tr.timesheetMasterRow td { border-top: 1px solid #e0e0e0; }
+
+      table td, table th { padding: 0px 2px 2px 1px; }
+      table.paySlip { border: none; border-top: 1px solid black; border-right: 1px solid black; border-left: 1px solid black; }
+      table.paySlip th { background-color: black; color: white; text-align: left;}
+      table.paySlip .paymentTypeNumber { text-align: center; }
+      table.paySlip tr.employeeGroupSummary td { empty-cells: show; background-color: #f0f0f0; border-top: 1px solid black; border-bottom: 1px solid #c0c0c0;font-weight:bold; }
+      table.paySlip .count, table.paySlip .amount, table.paySlip .hourlySalary { text-align: right;}
+      table.paySlip td.count{ text-align: right; }
+
+      table.personInformation, table.departmentInformation { margin-bottom: 1em; }
+
+      table.personInformation .label, table.departmentInformation .label { text-align: right; font-size: 100%; padding-right: 2ex; }
+      table.personInformation .value, table.departmentInformation .value { text-align: left; font-size: 100%; font-weight: bold; padding-right: 3em; }
+
+      tr.firstsubtotal td { background-color: #fafafa; border-top: 2px solid black; }
+      tr.subtotal td { background-color: #fafafa; }
+      tr.total { margin-bottom: 1.5ex; }
+      tr.total td { border-top: 1px solid black; border-bottom: 1px solid black; font-weight:bold; }
+
+      table.reportHeader { border: none; width: 100%; border-collapse: collapse; border-top: 1px solid black; border-right: 1px solid black; border-left: 1px solid black; }
+      table.reportHeader th { background-color: black; color: white; text-align: right; }
+      table.reportHeader td { text-align: right; }
+      table.reportHeader th.employeeGroup, table.reportHeader td.employeeGroup { text-align: left; }
+      table.reportHeader tr.border td { border-top: 1px solid #c0c0c0; }
+      table.reportHeader tr.total td { border-top: 1px solid black; border-bottom: 1px solid black; background-color: #F0F0F0 }
+      .nextPage {padding-top: 1ex; font-size: 8px; font-style: italic; text-align: right; }
+
+    </style>
+  </head>
+  <body>
+
+<div id="page" class="first">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="departmentInformation">
+    <tbody>
+      <tr><td class="label">Date</td>          <td class="value">28.01.2026 20:25</td></tr>
+      <tr><td class="label">Start date</td> <td class="value">01.01.2026</td></tr>
+      <tr><td class="label">End date</td> <td class="value">31.01.2026</td></tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="reportHeader">
+    <thead>
+      <tr>
+        <th class="employeeGroup">Employee group</th>
+        <th class="amount">Gross hours</th>
+        <th class="amount">Hours on break</th>
+        <th class="amount">Hours</th>
+        <th class="amount">Payroll</th>
+        <th class="amount">Break</th>
+        <th class="amount">Supplement</th>
+        <th class="amount">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+
+    <tr>
+      <td class="employeeGroup">Administration</td>
+      <td class="hours">15,75</td>
+      <td class="pause">0,5</td>
+      <td class="hours">15,25</td>
+      <td class="salary">kr. 2.953,13</td>
+      <td class="pause">kr. -93,75</td>
+      <td class="supplement">kr. 0,00</td>
+      <td class="total">kr. 2.859,38</td>
+    </tr>
+
+    <tr>
+      <td class="employeeGroup">Kitchen</td>
+      <td class="hours">570,67</td>
+      <td class="pause">34,5</td>
+      <td class="hours">536,17</td>
+      <td class="salary">kr. 83.858,07</td>
+      <td class="pause">kr. -5.038,50</td>
+      <td class="supplement">kr. 0,00</td>
+      <td class="total">kr. 78.819,57</td>
+    </tr>
+
+    <tr>
+      <td class="employeeGroup">Månedlig løn</td>
+      <td class="hours">0</td>
+      <td class="pause">0</td>
+      <td class="hours">0</td>
+      <td class="salary">kr. 30.000,00</td>
+      <td class="pause">kr. 0,00</td>
+      <td class="supplement">kr. 0,00</td>
+      <td class="total">kr. 30.000,00</td>
+    </tr>
+
+      <tr class="total">
+        <td class="employeeGroup">Sum total</td>
+        <td class="hours">586,42</td>
+        <td class="hours">35</td>
+        <td class="hours">551,42</td>
+        <td class="salary">kr. 116.811,20</td>
+        <td class="pause">kr. -5.132,25</td>
+        <td class="supplement">kr. 0,00</td>
+        <td class="total">kr. 111.678,95</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Álvaro Sebastián Suárez Naranjo</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;">Fuglesangs Allé 28, st.55</td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1190608</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">8210 Aarhus V</td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1200608</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311190608</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 4,00)</span></td>
+        <td class="count">53,28</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 7.193,25</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">07.01.2026</td>
+        <td class="dutyPeriod">16:29 - 21:23</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,90</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 661,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:29 - 20:59</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">10.01.2026</td>
+        <td class="dutyPeriod">10:30 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">9,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.282,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">14.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:13</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,72</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 636,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">17.01.2026</td>
+        <td class="dutyPeriod">10:38 - 20:32</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">9,90</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.336,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:38 - 15:08</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">21.01.2026</td>
+        <td class="dutyPeriod">16:34 - 21:20</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,77</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 643,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:34 - 21:04</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">24.01.2026</td>
+        <td class="dutyPeriod">10:30 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">9,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.282,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">28.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">31.01.2026</td>
+        <td class="dutyPeriod">10:30 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">9,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.282,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">53,28</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 7.733,25</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">4,00</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -540,00</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 8</td>
+        <td class="amount">53,28</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 7.193,25</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Benjamin  Nyby</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1190466</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1200466</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311190466</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Administration <span class="small">(Break 0,50)</span></td>
+        <td class="count">15,25</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 2.859,38</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">02.01.2026</td>
+        <td class="dutyPeriod">12:00 - 14:30</td>
+        <td class="text"><i></i>No position</td>
+        <td class="count">2,50</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 468,75</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">06.01.2026</td>
+        <td class="dutyPeriod">10:00 - 15:45</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,75</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 1.078,13</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:00 - 14:30</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. -93,75</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">20.01.2026</td>
+        <td class="dutyPeriod">09:00 - 16:30</td>
+        <td class="text"><i></i>No position</td>
+        <td class="count">7,50</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 1.406,25</td>
+      </tr>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 1,00)</span></td>
+        <td class="count">17,32</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 3.246,87</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">05.01.2026</td>
+        <td class="dutyPeriod">13:02 - 21:43</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">8,68</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 1.628,12</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">17:02 - 17:32</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. -93,75</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">09.01.2026</td>
+        <td class="dutyPeriod">10:00 - 13:00</td>
+        <td class="text"><i></i>No position</td>
+        <td class="count">3,00</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 562,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">12.01.2026</td>
+        <td class="dutyPeriod">14:55 - 21:33</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">6,63</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. 1.243,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">18:55 - 19:25</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 187,50</td>
+        <td class="amount">kr. -93,75</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">32,57</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 6.387,50</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">1,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -281,25</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 6</td>
+        <td class="amount">32,57</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 6.106,25</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Brian Gonzalez</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1189731</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1199731</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311189731</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 5,50)</span></td>
+        <td class="count">73,57</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 9.931,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">04.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:24</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,90</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.471,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">08.01.2026</td>
+        <td class="dutyPeriod">16:31 - 21:33</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,03</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 679,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:31 - 21:01</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">09.01.2026</td>
+        <td class="dutyPeriod">16:31 - 21:56</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,42</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 731,25</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:31 - 21:01</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">11.01.2026</td>
+        <td class="dutyPeriod">10:29 - 21:39</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">11,17</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.507,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:29 - 14:59</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">13.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:33</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,05</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 681,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">15.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:39</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,15</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 695,25</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">16.01.2026</td>
+        <td class="dutyPeriod">16:32 - 21:45</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,22</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 704,25</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:32 - 21:02</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">18.01.2026</td>
+        <td class="dutyPeriod">10:30 - 22:08</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">11,63</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.570,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">23.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">25.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">30.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">73,57</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 10.674,00</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">5,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -742,50</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 11</td>
+        <td class="amount">73,57</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 9.931,50</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Izabela Alicja Kiezik</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;">Skejbyparken 6, 2.6</td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1190875</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">8200 Aarhus N</td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1200875</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311190875</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 2,00)</span></td>
+        <td class="count">28,52</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 3.849,75</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">19.01.2026</td>
+        <td class="dutyPeriod">16:26 - 21:27</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,02</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 677,25</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:26 - 20:56</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">24.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">26.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">31.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">28,52</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 4.119,75</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">2,00</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -270,00</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 4</td>
+        <td class="amount">28,52</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 3.849,75</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Oliwia Anna Kasiubowska</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;">Helsingforsgade 4B, 7.16</td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1190874</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">8200 Aarhus N</td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1200874</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311190874</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 1,50)</span></td>
+        <td class="count">18,15</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 2.450,25</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">20.01.2026</td>
+        <td class="dutyPeriod">16:34 - 21:13</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,65</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 627,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:34 - 21:04</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">25.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">27.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">18,15</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 2.652,75</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">1,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -202,50</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 3</td>
+        <td class="amount">18,15</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 2.450,25</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Paula Rodrigo  Martín</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;">ordenskjoldsgade 32 4tv.</td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1191001</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">8200 Aarhus N</td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1201001</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311191001</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">27.01.2026</td>
+        <td class="dutyPeriod">10:00 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">11,00</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. 1.485,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:00 - 14:30</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 135,00</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">10,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 1.485,00</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">0,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -67,50</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 1</td>
+        <td class="amount">10,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 1.417,50</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Repetto Belen</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1182476</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1192476</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311182476</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 10,00)</span></td>
+        <td class="count">162,22</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 24.332,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">02.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:07</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,62</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.592,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">03.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:12</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,70</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.605,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">06.01.2026</td>
+        <td class="dutyPeriod">10:26 - 21:09</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,72</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.607,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:26 - 14:56</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">07.01.2026</td>
+        <td class="dutyPeriod">10:27 - 21:17</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,83</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.625,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:27 - 14:57</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">08.01.2026</td>
+        <td class="dutyPeriod">10:27 - 21:30</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">11,05</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.657,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:27 - 14:57</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">09.01.2026</td>
+        <td class="dutyPeriod">14:27 - 21:50</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">7,38</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.107,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">18:27 - 18:57</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">10.01.2026</td>
+        <td class="dutyPeriod">16:26 - 21:07</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,68</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 702,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:26 - 20:56</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">13.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:27</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,95</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.642,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">14.01.2026</td>
+        <td class="dutyPeriod">10:28 - 21:19</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,85</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.627,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:28 - 14:58</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">15.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:18</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,80</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.620,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">16.01.2026</td>
+        <td class="dutyPeriod">15:30 - 21:41</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">6,18</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 927,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">19:30 - 20:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">17.01.2026</td>
+        <td class="dutyPeriod">16:28 - 21:19</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,85</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 727,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:28 - 20:58</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">20.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:12</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,70</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.605,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">21.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:24</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,90</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.635,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">22.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.575,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">23.01.2026</td>
+        <td class="dutyPeriod">15:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 825,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">19:30 - 20:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">28.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 1.575,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">29.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 675,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">30.01.2026</td>
+        <td class="dutyPeriod">15:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 825,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">19:30 - 20:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">31.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 675,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">162,22</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 25.832,50</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">10,00</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -1.500,00</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 20</td>
+        <td class="amount">162,22</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 24.332,50</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Sorin Dumitru</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1176544</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1186544</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311176544</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 9,50)</span></td>
+        <td class="count">168,48</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 25.777,95</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">02.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:09</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,65</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.629,45</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">03.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:13</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,72</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.639,65</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">04.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:24</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,90</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.667,70</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">05.01.2026</td>
+        <td class="dutyPeriod">10:30 - 19:07</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">8,62</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.318,35</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">06.01.2026</td>
+        <td class="dutyPeriod">15:30 - 21:15</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">5,75</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 879,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">19:30 - 20:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">07.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:15</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,75</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 726,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">09.01.2026</td>
+        <td class="dutyPeriod">09:37 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,38</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.588,65</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">13:37 - 14:07</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">10.01.2026</td>
+        <td class="dutyPeriod">10:27 - 21:09</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,70</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.637,10</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:27 - 14:57</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">11.01.2026</td>
+        <td class="dutyPeriod">10:35 - 21:12</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,62</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.624,35</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:35 - 15:05</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">12.01.2026</td>
+        <td class="dutyPeriod">10:29 - 16:33</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">6,07</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 928,20</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:29 - 14:59</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">16.01.2026</td>
+        <td class="dutyPeriod">10:28 - 20:05</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">9,62</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.471,35</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:28 - 14:58</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">17.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:15</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,75</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.644,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">18.01.2026</td>
+        <td class="dutyPeriod">10:34 - 21:27</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,88</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.665,15</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:34 - 15:04</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">19.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:35</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">11,08</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.695,75</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">23.01.2026</td>
+        <td class="dutyPeriod">09:30 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.606,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">13:30 - 14:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">24.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 688,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">26.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.606,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">29.01.2026</td>
+        <td class="dutyPeriod">10:30 - 21:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.606,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">14:30 - 15:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">30.01.2026</td>
+        <td class="dutyPeriod">09:30 - 20:00</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">10,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. 1.606,50</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">13:30 - 14:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 153,00</td>
+        <td class="amount">kr. -76,50</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">168,48</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 27.231,45</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">9,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -1.453,50</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 19</td>
+        <td class="amount">168,48</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 25.777,95</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Sylvester Eliassen-Krull</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1190182</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1200182</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311190182</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">1202</td>
+        <td class="dutyDate" colspan="2">01.01.2026 - 31.01.2026</td>
+        <td class="text">Månedlig løn</td>
+        <td class="count">160,33</td>
+        <td class="hourlySalary"></td>
+        <td class="amount">kr. 30.000,00</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Månedlig løn</td>
+        <td class="amount"></td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 30.000,00</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">&nbsp;</td>
+        <td class="amount">0,00</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 30.000,00</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div id="page" class="page">
+  <h2>Payroll specification, The Fish Project Aps</h2>
+  <table cellpadding="0" cellspacing="0" border="0" class="personInformation" style="width:100%;">
+    <tbody>
+      <tr>
+        <td class="label" style="width:68px;">Name</td>
+        <td class="value" style="width:188px;">Torres Barbara</td>
+        <td class="label">&nbsp;</td>
+        <td class="value" style="width:180px;"></td>
+        <td class="label" style="width:60px;">Date</td>
+        <td class="value" style="width:90px;">28.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Employee number</td>
+        <td class="value">1174776</td>
+        <td class="label">&nbsp;</td>
+        <td class="value"> </td>
+        <td class="label">Start date</td>
+        <td class="value">01.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Salary ID</td>
+        <td class="value">1184776</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">End date</td>
+        <td class="value">31.01.2026</td>
+      </tr>
+      <tr>
+        <td class="label">Serial number</td>
+        <td class="value">202601010311174776</td>
+        <td class="label">&nbsp;</td>
+        <td class="value">&nbsp;</td>
+        <td class="label">Page</td>
+        <td class="value">1 of 1</td>
+      </tr>
+    </tbody>
+  </table>
+  <table cellpadding="0" cellspacing="0" border="0" class="paySlip">
+    <thead>
+      <tr>
+        <th class="paymentTypeNumber">Salary code</th>
+        <th class="dutyDate">Date</th>
+        <th class="dutyPeriod">Range&nbsp;&nbsp;&nbsp;</th>
+        <th class="text">Text</th>
+        <th class="count">Quantity</th>
+        <th class="hourlySalary">Hourly wage</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="employeeGroupSummary">
+        <td class="paymentTypeNumber">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+        <td class="text">Hours, Kitchen <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,13</td>
+        <td>&nbsp;</td>
+        <td class="amount">kr. 620,00</td>
+      </tr>
+
+      <tr class="timesheetMasterRow">
+        <td class="paymentTypeNumber">01</td>
+        <td class="dutyDate">06.01.2026</td>
+        <td class="dutyPeriod">16:30 - 21:08</td>
+        <td class="text"><i></i>No position <span class="small">(Break 0,50)</span></td>
+        <td class="count">4,63</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. 695,00</td>
+      </tr>
+      <tr class="timesheetPauseRow">
+        <td class="paymentTypeNumber"></td>
+        <td class="dutyDate"></td>
+        <td class="dutyPeriod">20:30 - 21:00</td>
+        <td class="text">Break</td>
+        <td class="count">0,50</td>
+        <td class="hourlySalary">kr. 150,00</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+
+      <tr class="firstsubtotal">
+        <td colspan="7" style="line-height: 0px; height: 0px;">&nbsp;</td>
+      </tr>
+      
+      <tr class="subtotal">
+        <td class="label" colspan="4">Paid hours</td>
+        <td class="amount">4,13</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 695,00</td>
+      </tr>
+      <tr class="subtotal">
+        <td class="label" colspan="4">Break</td>
+        <td class="amount">0,50</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. -75,00</td>
+      </tr>
+      <tr class="total">
+        <td class="label">Total</td>
+        <td class="label" colspan="3">Number of shifts: 1</td>
+        <td class="amount">4,13</td>
+        <td class="amount">&nbsp;</td>
+        <td class="amount">kr. 620,00</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+  </body>
+</html>
+
