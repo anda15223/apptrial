@@ -49,12 +49,11 @@ function getLaborBetween(from: string, to: string) {
     .prepare(
       `
       SELECT
-        employee,
         date,
-        ROUND(SUM(amount), 2) AS baseCost
+        SUM(amount) AS baseCost
       FROM labor_entries
-      WHERE date BETWEEN ? AND ?
-      GROUP BY employee, date
+      WHERE date >= ? AND date <= ?
+      GROUP BY date
     `
     )
     .all(from, to);
@@ -63,8 +62,8 @@ function getLaborBetween(from: string, to: string) {
   let laborCost = 0;
 
   for (const r of rows) {
-    baseCost += r.baseCost;
-    laborCost += round2(r.baseCost * PAYROLL_UPLIFT);
+    baseCost += Number(r.baseCost);
+    laborCost += round2(Number(r.baseCost) * PAYROLL_UPLIFT);
   }
 
   return {
