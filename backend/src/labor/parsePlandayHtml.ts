@@ -1,62 +1,92 @@
+import { db } from "./db";
 import * as cheerio from "cheerio";
 
-export type LaborEntry = {
+type ParsedShift = {
   employee: string;
   date: string; // YYYY-MM-DD
+  from: string; // HH:MM
+  to: string;   // HH:MM
   amount: number;
 };
 
-function toIsoDate(input: string): string | null {
-  const m = input.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-  if (!m) return null;
-  return `${m[3]}-${m[2]}-${m[1]}`;
+function normalizeDate(dkDate: string): string {
+  // dd.MM.yyyy → yyyy-MM-dd
+  const [dd, mm, yyyy] = dkDate.split(".");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-function parseDkk(input: string): number | null {
-  let s = input.trim();
-  s = s.replace(/kr\.?/gi, "");
-  s = s.replace(/\./g, "");
-  s = s.replace(",", ".");
-  const n = Number(s);
-  return isNaN(n) ? null : n;
-}
-
-export function parsePlandayHtml(html: string): LaborEntry[] {
+export function parsePlandayHtml(html: string) {
   const $ = cheerio.load(html);
-  const entries: LaborEntry[] = [];
 
-  $("table.personInformation").each((_, personTable) => {
-    const employee = $(personTable)
-      .find("td.label:contains('Name')")
-      .next("td.value")
-      .text()
-      .trim();
+  // Ensure schedule table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS labor_schedule (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      employee TEXT NOT NULL,
+      date TEXT NOT NULL,
+      time_from TEXT NOT NULL,
+      time_to TEXT NOT NULL
+    );
 
-    if (!employee) return;
+    CREATE INDEX IF NOT EXISTS idx_labor_schedule_date
+      ON labor_schedule(date);
+  `);
 
-    const paySlip = $(personTable)
-      .nextAll("table.paySlip")
-      .first();
+  const shifts: ParsedShift[] = [];
 
-    paySlip.find("tr").each((_, row) => {
-      const cells = $(row).find("td");
-      if (cells.length < 5) return;
+  $(".timesheetMasterRow").each((_, row) => {
+    const cells = $(row).find("td");
 
-      const dateText = $(cells[1]).text().trim();
-      const amountText = $(cells[cells.length - 1]).text().trim();
+    const dutyDateRaw = $(cells[1]).text().trim();
+    const dutyPeriod = $(cells[2]).text().trim();
+    const amountRaw = $(cells[6]).text().replace(/[^\d,]/g, "").replace(",", ".");
 
-      const date = toIsoDate(dateText);
-      const amount = parseDkk(amountText);
+    if (!dutyDateRaw || !dutyPeriod) return;
 
-      if (!date || amount === null) return;
+    const [from, to] = dutyPeriod.split(" - ").map((s) => s.trim());
+    if (!from || !to) return;
 
-      entries.push({
-        employee,
-        date,
-        amount,
-      });
+    const date = normalizeDate(dutyDateRaw);
+    const amount = Number(amountRaw);
+
+    // Employee name is inferred later via amount matching
+    shifts.push({
+      employee: "__UNKNOWN__",
+      date,
+      from,
+      to,
+      amount,
     });
   });
 
-  return entries;
+  // Clear existing schedule (idempotent import)
+  db.prepare(`DELETE FROM labor_schedule`).run();
+
+  // Map shifts to employees via labor_entries (amount matching)
+  const stmtFindEmployee = db.prepare(`
+    SELECT employee
+    FROM labor_entries
+    WHERE date = ?
+      AND ABS(amount - ?) < 0.01
+    LIMIT 1
+  `);
+
+  const stmtInsert = db.prepare(`
+    INSERT INTO labor_schedule (employee, date, time_from, time_to)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  for (const s of shifts) {
+    const row = stmtFindEmployee.get(s.date, s.amount) as
+      | { employee: string }
+      | undefined;
+
+    if (!row) continue;
+
+    stmtInsert.run(row.employee, s.date, s.from, s.to);
+  }
+
+  return {
+    shiftsImported: shifts.length,
+  };
 }

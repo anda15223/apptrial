@@ -1,80 +1,50 @@
 import express from "express";
-import { parsePlandayHtml } from "./parsePlandayHtml";
 import { db } from "./db";
+import { parsePlandayHtml } from "./parsePlandayHtml";
 
 const router = express.Router();
-const PAYROLL_UPLIFT = 1.1574;
 
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}
+const UPLIFT_PCT = 15.74;
+const UPLIFT_FACTOR = 1 + UPLIFT_PCT / 100;
+
+/* ================= IMPORT ================= */
 
 router.post("/import", express.text({ type: "*/*" }), (req, res) => {
   const html = req.body;
-  if (!html) return res.status(400).json({ error: "No HTML body" });
-
-  const entries = parsePlandayHtml(html);
-  const insert = db.prepare(`
-    INSERT INTO labor_entries (employee, date, amount)
-    VALUES (?, ?, ?)
-  `);
-
-  const tx = db.transaction(() => {
-    for (const e of entries) {
-      insert.run(e.employee, e.date, e.amount);
-    }
-  });
-
-  tx();
-
-  res.json({ status: "ok", entriesImported: entries.length });
-});
-
-function getLaborBetween(from: string, to: string) {
-  const rows = db
-    .prepare(
-      `
-      SELECT date, SUM(amount) AS baseCost
-      FROM labor_entries
-      WHERE date >= ? AND date <= ?
-      GROUP BY date
-    `
-    )
-    .all(from, to);
-
-  let baseCost = 0;
-  let laborCost = 0;
-
-  for (const r of rows) {
-    baseCost += Number(r.baseCost);
-    laborCost += round2(Number(r.baseCost) * PAYROLL_UPLIFT);
+  if (!html) {
+    return res.status(400).json({ error: "Missing HTML body" });
   }
 
-  return {
-    baseCost: round2(baseCost),
-    laborCost: round2(laborCost),
-  };
-}
-
-router.get("/day", (req, res) => {
-  const date = String(req.query.date || "");
-  if (!date) return res.status(400).json({ error: "date required" });
-
-  const result = getLaborBetween(date, date);
-
-  res.json({ date, upliftPct: 15.74, ...result });
+  const result = parsePlandayHtml(html);
+  res.json({ status: "ok", ...result });
 });
 
+/* ================= DAY ================= */
+
+router.get("/day", (req, res) => {
+  const date = req.query.date as string;
+  if (!date) return res.status(400).json({ error: "Missing date" });
+
+  const rows = db
+    .prepare(`SELECT amount FROM labor_entries WHERE date = ?`)
+    .all(date) as { amount: number }[];
+
+  const baseCost = rows.reduce((s, r) => s + r.amount, 0);
+  const laborCost = Number((baseCost * UPLIFT_FACTOR).toFixed(2));
+
+  res.json({ date, upliftPct: UPLIFT_PCT, baseCost, laborCost });
+});
+
+/* ================= WEEK ================= */
+
 router.get("/week", (req, res) => {
-  const date = new Date(String(req.query.date || ""));
-  if (isNaN(date.getTime()))
-    return res.status(400).json({ error: "invalid date" });
+  const date = req.query.date as string;
+  if (!date) return res.status(400).json({ error: "Missing date" });
 
-  const day = date.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(date);
-  monday.setDate(date.getDate() + diffToMonday);
+  const d = new Date(date);
+  const day = d.getDay() || 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day + 1);
 
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -82,39 +52,70 @@ router.get("/week", (req, res) => {
   const from = monday.toISOString().slice(0, 10);
   const to = sunday.toISOString().slice(0, 10);
 
-  const result = getLaborBetween(from, to);
+  const rows = db
+    .prepare(`SELECT amount FROM labor_entries WHERE date BETWEEN ? AND ?`)
+    .all(from, to) as { amount: number }[];
 
-  res.json({ from, to, upliftPct: 15.74, ...result });
+  const baseCost = rows.reduce((s, r) => s + r.amount, 0);
+  const laborCost = Number((baseCost * UPLIFT_FACTOR).toFixed(2));
+
+  res.json({ from, to, upliftPct: UPLIFT_PCT, baseCost, laborCost });
 });
+
+/* ================= MONTH ================= */
 
 router.get("/month", (req, res) => {
-  const date = new Date(String(req.query.date || ""));
-  if (isNaN(date.getTime()))
-    return res.status(400).json({ error: "invalid date" });
+  const date = req.query.date as string;
+  if (!date) return res.status(400).json({ error: "Missing date" });
 
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const month = date.slice(0, 7);
 
-  const from = `${yyyy}-${mm}-01`;
-  const to = `${yyyy}-${mm}-31`;
+  const rows = db
+    .prepare(`SELECT amount FROM labor_entries WHERE substr(date,1,7) = ?`)
+    .all(month) as { amount: number }[];
 
-  const result = getLaborBetween(from, to);
+  const baseCost = rows.reduce((s, r) => s + r.amount, 0);
+  const laborCost = Number((baseCost * UPLIFT_FACTOR).toFixed(2));
 
-  res.json({ month: `${yyyy}-${mm}`, upliftPct: 15.74, ...result });
+  res.json({ month, upliftPct: UPLIFT_PCT, baseCost, laborCost });
 });
 
+/* ================= YEAR ================= */
+
 router.get("/year", (req, res) => {
-  const date = new Date(String(req.query.date || ""));
-  if (isNaN(date.getTime()))
-    return res.status(400).json({ error: "invalid date" });
+  const date = req.query.date as string;
+  if (!date) return res.status(400).json({ error: "Missing date" });
 
-  const yyyy = date.getFullYear();
-  const from = `${yyyy}-01-01`;
-  const to = `${yyyy}-12-31`;
+  const year = date.slice(0, 4);
 
-  const result = getLaborBetween(from, to);
+  const rows = db
+    .prepare(`SELECT amount FROM labor_entries WHERE substr(date,1,4) = ?`)
+    .all(year) as { amount: number }[];
 
-  res.json({ year: String(yyyy), upliftPct: 15.74, ...result });
+  const baseCost = rows.reduce((s, r) => s + r.amount, 0);
+  const laborCost = Number((baseCost * UPLIFT_FACTOR).toFixed(2));
+
+  res.json({ year, upliftPct: UPLIFT_PCT, baseCost, laborCost });
+});
+
+/* ================= TODAY SCHEDULE ================= */
+
+router.get("/schedule/today", (req, res) => {
+  const date = req.query.date as string;
+  if (!date) return res.status(400).json({ error: "Missing date" });
+
+  const rows = db
+    .prepare(
+      `
+    SELECT employee, time_from AS "from", time_to AS "to"
+    FROM labor_schedule
+    WHERE date = ?
+    ORDER BY time_from
+  `
+    )
+    .all(date);
+
+  res.json({ date, schedule: rows });
 });
 
 export default router;

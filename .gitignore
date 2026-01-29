@@ -8,4 +8,7 @@ backend/input.json
 node_modules/
 apptrial/
 backend/src/integrations/posAutoLogin.ts
+planday.html
+backend/src/labor/labor.db
+
 
