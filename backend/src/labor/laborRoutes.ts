@@ -3,25 +3,17 @@ import { parsePlandayHtml } from "./parsePlandayHtml";
 import { db } from "./db";
 
 const router = express.Router();
-
-// Calibrated payroll uplift (holiday + ATP + overhead)
 const PAYROLL_UPLIFT = 1.1574;
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-// --------------------------------------------------
-// IMPORT PAYROLL HTML
-// --------------------------------------------------
 router.post("/import", express.text({ type: "*/*" }), (req, res) => {
   const html = req.body;
-  if (!html) {
-    return res.status(400).json({ error: "No HTML body" });
-  }
+  if (!html) return res.status(400).json({ error: "No HTML body" });
 
   const entries = parsePlandayHtml(html);
-
   const insert = db.prepare(`
     INSERT INTO labor_entries (employee, date, amount)
     VALUES (?, ?, ?)
@@ -35,22 +27,14 @@ router.post("/import", express.text({ type: "*/*" }), (req, res) => {
 
   tx();
 
-  res.json({
-    status: "ok",
-    entriesImported: entries.length,
-  });
+  res.json({ status: "ok", entriesImported: entries.length });
 });
 
-// --------------------------------------------------
-// HELPERS
-// --------------------------------------------------
 function getLaborBetween(from: string, to: string) {
   const rows = db
     .prepare(
       `
-      SELECT
-        date,
-        SUM(amount) AS baseCost
+      SELECT date, SUM(amount) AS baseCost
       FROM labor_entries
       WHERE date >= ? AND date <= ?
       GROUP BY date
@@ -72,31 +56,21 @@ function getLaborBetween(from: string, to: string) {
   };
 }
 
-// --------------------------------------------------
-// DAILY
-// --------------------------------------------------
 router.get("/day", (req, res) => {
   const date = String(req.query.date || "");
   if (!date) return res.status(400).json({ error: "date required" });
 
   const result = getLaborBetween(date, date);
 
-  res.json({
-    date,
-    upliftPct: 15.74,
-    ...result,
-  });
+  res.json({ date, upliftPct: 15.74, ...result });
 });
 
-// --------------------------------------------------
-// WEEK (Mon → Sun)
-// --------------------------------------------------
 router.get("/week", (req, res) => {
   const date = new Date(String(req.query.date || ""));
   if (isNaN(date.getTime()))
     return res.status(400).json({ error: "invalid date" });
 
-  const day = date.getDay(); // 0=Sun
+  const day = date.getDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
 
   const monday = new Date(date);
@@ -110,17 +84,9 @@ router.get("/week", (req, res) => {
 
   const result = getLaborBetween(from, to);
 
-  res.json({
-    from,
-    to,
-    upliftPct: 15.74,
-    ...result,
-  });
+  res.json({ from, to, upliftPct: 15.74, ...result });
 });
 
-// --------------------------------------------------
-// MONTH
-// --------------------------------------------------
 router.get("/month", (req, res) => {
   const date = new Date(String(req.query.date || ""));
   if (isNaN(date.getTime()))
@@ -134,11 +100,21 @@ router.get("/month", (req, res) => {
 
   const result = getLaborBetween(from, to);
 
-  res.json({
-    month: `${yyyy}-${mm}`,
-    upliftPct: 15.74,
-    ...result,
-  });
+  res.json({ month: `${yyyy}-${mm}`, upliftPct: 15.74, ...result });
+});
+
+router.get("/year", (req, res) => {
+  const date = new Date(String(req.query.date || ""));
+  if (isNaN(date.getTime()))
+    return res.status(400).json({ error: "invalid date" });
+
+  const yyyy = date.getFullYear();
+  const from = `${yyyy}-01-01`;
+  const to = `${yyyy}-12-31`;
+
+  const result = getLaborBetween(from, to);
+
+  res.json({ year: String(yyyy), upliftPct: 15.74, ...result });
 });
 
 export default router;
